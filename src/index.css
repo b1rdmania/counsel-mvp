@@ -1,0 +1,57 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  background-color: #1C1C1E;
+}
+
+select option { background-color: #262628; color: #EBEBF5; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1C1C1E; }
+::-webkit-scrollbar-thumb { background: #48484A; border-radius: 3px; }
+
+.clause-pane::-webkit-scrollbar { width: 6px; }
+.clause-pane::-webkit-scrollbar-track { background: transparent; }
+.clause-pane::-webkit-scrollbar-thumb { background: #48484A; border-radius: 3px; }
+.comment-list::-webkit-scrollbar { width: 6px; }
+.comment-list::-webkit-scrollbar-track { background: transparent; }
+.comment-list::-webkit-scrollbar-thumb { background: #48484A; border-radius: 3px; }
+.comment-field:focus { border-color: #0A84FF; outline: none; }
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}
+@keyframes fadeInRow {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.pulse-dot { animation: pulse-ring 2s infinite; }
+.blink-dot { animation: blink 1s infinite; }
+.log-row-new { animation: fadeInRow 0.4s ease-out; }
+.table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #38383A transparent;
+}
+.table-wrapper::-webkit-scrollbar { width: 6px; }
+.table-wrapper::-webkit-scrollbar-track { background: transparent; }
+.table-wrapper::-webkit-scrollbar-thumb { background-color: #38383A; border-radius: 3px; }
