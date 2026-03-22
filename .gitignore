@@ -23,3 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 src/assets/
+.vercel
+
+# Backend
+backend/uploads/
+backend/counsel.db
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/**/__pycache__/
+*.pyc
+.env

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { uploadDocument } from '../api/client';
 
 const customStyles = {
   mainWorkspace: {
@@ -236,6 +237,9 @@ const IntakePage = () => {
   const [isDropZoneHovered, setIsDropZoneHovered] = useState(false);
   const [isGhostHovered, setIsGhostHovered] = useState(false);
   const [fileUploaded, setFileUploaded] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const [toggleFlagMarket, setToggleFlagMarket] = useState(true);
@@ -257,7 +261,9 @@ const IntakePage = () => {
     setIsDraggingOver(false);
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
+      setSelectedFile(files[0]);
       setFileUploaded(true);
+      setUploadError(null);
     }
   };
 
@@ -276,7 +282,9 @@ const IntakePage = () => {
     input.accept = '.pdf,.doc,.docx';
     input.onchange = (e) => {
       if (e.target.files && e.target.files.length > 0) {
+        setSelectedFile(e.target.files[0]);
         setFileUploaded(true);
+        setUploadError(null);
       }
     };
     input.click();
@@ -469,16 +477,36 @@ const IntakePage = () => {
             Cancel
           </button>
           <button
-            style={fileUploaded ? customStyles.btnPrimary : customStyles.btnPrimaryDisabled}
-            disabled={!fileUploaded}
-            onClick={() => {
-              if (fileUploaded) {
-                navigate('/processing');
+            style={fileUploaded && !uploading ? customStyles.btnPrimary : customStyles.btnPrimaryDisabled}
+            disabled={!fileUploaded || uploading}
+            onClick={async () => {
+              if (!selectedFile) return;
+              setUploading(true);
+              setUploadError(null);
+              try {
+                const postureMap = {
+                  'Balanced / Market Standard': 'balanced',
+                  'Aggressive / Seller Favorable': 'aggressive',
+                  'Conservative / Buyer Favorable': 'conservative',
+                  'Neutral': 'balanced',
+                };
+                const doc = await uploadDocument(
+                  selectedFile,
+                  activeOption,
+                  postureMap[posture] || 'balanced'
+                );
+                navigate(`/processing/${doc.id}`);
+              } catch (err) {
+                setUploadError(err.message);
+                setUploading(false);
               }
             }}
           >
-            Begin Analysis
+            {uploading ? 'Uploading...' : 'Begin Analysis'}
           </button>
+          {uploadError && (
+            <div style={{ color: '#FF453A', fontSize: '12px', marginTop: '8px' }}>{uploadError}</div>
+          )}
         </div>
       </div>
     </main>

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { getDocument } from '../api/client';
 
 const customStyles = {
   mainWorkspace: { flex: 1, display: 'flex', overflow: 'hidden' },
@@ -23,26 +25,26 @@ const customStyles = {
   riskMeta: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' },
   badgeHigh: { padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', backgroundColor: 'rgba(255, 69, 58, 0.1)', color: '#FF453A' },
   badgeMed: { padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', backgroundColor: 'rgba(255, 159, 10, 0.1)', color: '#FF9F0A' },
+  badgeLow: { padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', backgroundColor: 'rgba(50, 215, 75, 0.1)', color: '#32D74B' },
   riskClauseRef: { fontSize: '11px', color: 'rgba(235, 235, 245, 0.3)', fontFamily: '"SF Mono", "Menlo", "Consolas", monospace' },
   riskTitle: { fontSize: '13px', fontWeight: 600, color: '#EBEBF5', marginBottom: '4px' },
   riskPreview: { fontSize: '12px', color: 'rgba(235, 235, 245, 0.6)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
   quickActions: { display: 'flex', justifyContent: 'flex-end', marginTop: '10px', gap: '8px' },
   actionLink: { fontSize: '11px', color: '#0A84FF', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' },
-  icon: { width: '14px', height: '14px', fill: 'currentColor' },
 };
 
-const riskData = [
-  { id: 1, severity: 'high', clause: 'Clause 8.1(c)', title: 'Uncapped IP Indemnification', preview: 'Strict liability for IP infringement regardless of knowledge or foreseeability. Removes standard qualifiers.', highlightId: 'hl-8-1-c' },
-  { id: 2, severity: 'high', clause: 'Clause 9.1', title: 'Broad Direct Damage Exclusion', preview: 'Potential exclusion of core service failure damages due to narrow definition of direct losses.', highlightId: null },
-  { id: 3, severity: 'high', clause: 'Clause 14.2', title: 'Unlimited Audit Rights', preview: 'Customer may audit Vendor facilities at any time without prior notice or scope limitations.', highlightId: null },
-  { id: 4, severity: 'medium', clause: 'Clause 8.2', title: 'Asymmetric Indemnity Caps', preview: 'Purchaser indemnity is capped at SOW value while Vendor indemnity remains uncapped.', highlightId: 'hl-8-2' },
-  { id: 5, severity: 'medium', clause: 'Clause 10.1', title: 'Termination for Convenience', preview: '30-day notice period is shorter than market standard for enterprise implementations (90 days).', highlightId: 'hl-10-1' },
-  { id: 6, severity: 'medium', clause: 'Clause 4.3', title: 'Net 90 Payment Terms', preview: 'Payment cycle exceeds typical Net 30/45. Impacts cash flow projections for fiscal year.', highlightId: null },
-  { id: 7, severity: 'medium', clause: 'Clause 22.1', title: 'Governing Law: England & Wales', preview: 'Deviation from US HQ standard (Delaware). Requires local counsel review for enforcement.', highlightId: null },
+const demoRiskData = [
+  { id: 1, severity: 'high', clause: 'Clause 8.1(c)', title: 'Uncapped IP Indemnification', preview: 'Strict liability for IP infringement regardless of knowledge or foreseeability.' },
+  { id: 2, severity: 'high', clause: 'Clause 9.1', title: 'Broad Direct Damage Exclusion', preview: 'Potential exclusion of core service failure damages.' },
+  { id: 3, severity: 'high', clause: 'Clause 14.2', title: 'Unlimited Audit Rights', preview: 'Customer may audit Vendor facilities at any time without prior notice.' },
+  { id: 4, severity: 'medium', clause: 'Clause 8.2', title: 'Asymmetric Indemnity Caps', preview: 'Purchaser indemnity is capped while Vendor indemnity remains uncapped.' },
+  { id: 5, severity: 'medium', clause: 'Clause 10.1', title: 'Termination for Convenience', preview: '30-day notice period is shorter than market standard.' },
+  { id: 6, severity: 'medium', clause: 'Clause 4.3', title: 'Net 90 Payment Terms', preview: 'Payment cycle exceeds typical Net 30/45.' },
+  { id: 7, severity: 'medium', clause: 'Clause 22.1', title: 'Governing Law: England & Wales', preview: 'Deviation from US HQ standard (Delaware).' },
 ];
 
 const WarningIcon = () => (
-  <svg style={{ ...customStyles.icon, color: '#FF453A' }} viewBox="0 0 24 24">
+  <svg style={{ width: '14px', height: '14px', fill: '#FF453A' }} viewBox="0 0 24 24">
     <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
   </svg>
 );
@@ -53,11 +55,13 @@ const RiskItem = ({ risk, isActive, onClick }) => {
   if (isActive) itemStyle = customStyles.riskItemActive;
   else if (isHovered) itemStyle = customStyles.riskItemHover;
 
+  const badge = risk.severity === 'high' ? customStyles.badgeHigh : risk.severity === 'medium' ? customStyles.badgeMed : customStyles.badgeLow;
+
   return (
     <div style={itemStyle} onClick={() => onClick(risk)} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       <div style={customStyles.riskMeta}>
-        <span style={risk.severity === 'high' ? customStyles.badgeHigh : customStyles.badgeMed}>
-          {risk.severity === 'high' ? 'High Risk' : 'Medium Risk'}
+        <span style={badge}>
+          {risk.severity === 'high' ? 'High Risk' : risk.severity === 'medium' ? 'Medium Risk' : 'Low Risk'}
         </span>
         <span style={customStyles.riskClauseRef}>{risk.clause}</span>
       </div>
@@ -75,89 +79,148 @@ const RiskItem = ({ risk, isActive, onClick }) => {
 };
 
 const RiskSummaryPage = () => {
-  const [activeRisk, setActiveRisk] = useState(riskData[0]);
+  const { documentId } = useParams();
+  const isLive = !!documentId;
 
-  const handleRiskClick = (risk) => { setActiveRisk(risk); };
+  const [riskData, setRiskData] = useState(demoRiskData);
+  const [activeRisk, setActiveRisk] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [highCount, setHighCount] = useState(3);
+  const [medCount, setMedCount] = useState(11);
 
-  const getHighlightStyle = (highlightId) => {
-    if (!highlightId) return customStyles.hlHigh;
-    if (activeRisk && activeRisk.highlightId === highlightId) {
-      return highlightId.includes('8-1') ? customStyles.hlHighActive : customStyles.hlMedActive;
+  useEffect(() => {
+    if (!isLive) {
+      setActiveRisk(demoRiskData[0]);
+      return;
     }
-    if (highlightId === 'hl-8-1-c') return customStyles.hlHigh;
-    return customStyles.hlMed;
-  };
+
+    getDocument(documentId).then(doc => {
+      if (doc.analyses && doc.analyses.length > 0) {
+        const risks = doc.analyses
+          .filter(a => a.risk_score >= 3)
+          .map((a, i) => ({
+            id: i + 1,
+            severity: a.risk_score >= 4 ? 'high' : 'medium',
+            clause: `Section ${a.section}`,
+            title: a.title || `Risk in ${a.section}`,
+            preview: a.rationale,
+            text: a.text,
+            confidence: a.confidence,
+          }));
+        setRiskData(risks);
+        if (risks.length > 0) setActiveRisk(risks[0]);
+      }
+      setHighCount(doc.high_risk || 0);
+      setMedCount(doc.medium_risk || 0);
+      if (doc.summary) setSummary(doc.summary);
+    }).catch(console.error);
+  }, [isLive, documentId]);
+
+  const totalRisks = highCount + medCount;
 
   return (
     <div style={customStyles.mainWorkspace}>
       <div style={customStyles.documentPane}>
         <div style={customStyles.documentContent}>
-          <h2 style={customStyles.documentH2}>8. Indemnification</h2>
-          <p>
-            8.1 <strong>By Vendor.</strong> Vendor shall indemnify, defend, and hold harmless Purchaser and its
-            officers, directors, employees, and agents from and against any and all claims, damages, liabilities,
-            costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) any breach of
-            Vendor's representations or warranties herein; (b) any negligence or willful misconduct by Vendor; or{' '}
-            <span style={getHighlightStyle('hl-8-1-c')} onClick={() => handleRiskClick(riskData[0])}>
-              (c) any claim that the Services or Deliverables infringe upon the intellectual property rights of any
-              third party, regardless of whether such infringement was reasonably foreseeable or known to Vendor.
-            </span>
-          </p>
-          <p style={{ marginTop: '16px' }}>
-            8.2 <strong>By Purchaser.</strong> Purchaser shall indemnify and hold harmless Vendor against claims
-            arising solely from Vendor's compliance with Purchaser's specific written designs or instructions,{' '}
-            <span style={getHighlightStyle('hl-8-2')} onClick={() => handleRiskClick(riskData[3])}>
-              provided liability is capped at amounts paid under the applicable SOW.
-            </span>
-          </p>
-          <h2 style={customStyles.documentH2}>9. Limitation of Liability</h2>
-          <p>
-            IN NO EVENT SHALL EITHER PARTY BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, PUNITIVE, OR
-            CONSEQUENTIAL DAMAGES. VENDOR'S TOTAL AGGREGATE LIABILITY ARISING OUT OF THIS AGREEMENT SHALL NOT EXCEED
-            THE TOTAL AMOUNTS PAID BY PURCHASER TO VENDOR IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM.
-          </p>
-          <h2 style={customStyles.documentH2}>10. Term and Termination</h2>
-          <p>
-            10.1 <strong>Term.</strong> This Agreement shall commence on the Effective Date and continue for a period
-            of five (5) years unless earlier terminated.{' '}
-            <span style={getHighlightStyle('hl-10-1')} onClick={() => handleRiskClick(riskData[4])}>
-              Either party may terminate for convenience upon 30 days written notice.
-            </span>
-          </p>
+          {summary ? (
+            <>
+              <h2 style={customStyles.documentH2}>Executive Summary</h2>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{summary.executive_summary}</p>
+              {summary.key_terms && summary.key_terms.length > 0 && (
+                <>
+                  <h2 style={customStyles.documentH2}>Key Terms</h2>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #48484A', color: 'rgba(235,235,245,0.6)', fontSize: '11px', textTransform: 'uppercase' }}>Term</th>
+                        <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #48484A', color: 'rgba(235,235,245,0.6)', fontSize: '11px', textTransform: 'uppercase' }}>Value</th>
+                        <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #48484A', color: 'rgba(235,235,245,0.6)', fontSize: '11px', textTransform: 'uppercase' }}>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.key_terms.map((kt, i) => (
+                        <tr key={i}>
+                          <td style={{ padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontWeight: 600 }}>{kt.term}</td>
+                          <td style={{ padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>{kt.value}</td>
+                          <td style={{ padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'rgba(235,235,245,0.6)' }}>{kt.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+              {/* Highlighted clauses */}
+              {riskData.length > 0 && (
+                <>
+                  <h2 style={customStyles.documentH2}>Flagged Clauses</h2>
+                  {riskData.map(risk => (
+                    <p key={risk.id} style={{ marginBottom: '16px' }}>
+                      <span
+                        style={activeRisk && activeRisk.id === risk.id
+                          ? (risk.severity === 'high' ? customStyles.hlHighActive : customStyles.hlMedActive)
+                          : (risk.severity === 'high' ? customStyles.hlHigh : customStyles.hlMed)
+                        }
+                        onClick={() => setActiveRisk(risk)}
+                      >
+                        <strong>{risk.clause}:</strong> {risk.text || risk.preview}
+                      </span>
+                    </p>
+                  ))}
+                </>
+              )}
+            </>
+          ) : (
+            // Demo content
+            <>
+              <h2 style={customStyles.documentH2}>8. Indemnification</h2>
+              <p>
+                8.1 <strong>By Vendor.</strong> Vendor shall indemnify, defend, and hold harmless Purchaser and its
+                officers, directors, employees, and agents from and against any and all claims, damages, liabilities,
+                costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) any breach of
+                Vendor's representations or warranties herein; (b) any negligence or willful misconduct by Vendor; or{' '}
+                <span style={activeRisk && activeRisk.id === 1 ? customStyles.hlHighActive : customStyles.hlHigh} onClick={() => setActiveRisk(riskData[0])}>
+                  (c) any claim that the Services or Deliverables infringe upon the intellectual property rights of any
+                  third party, regardless of whether such infringement was reasonably foreseeable or known to Vendor.
+                </span>
+              </p>
+              <h2 style={customStyles.documentH2}>9. Limitation of Liability</h2>
+              <p>IN NO EVENT SHALL EITHER PARTY BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES.</p>
+              <h2 style={customStyles.documentH2}>10. Term and Termination</h2>
+              <p>10.1 <strong>Term.</strong> This Agreement shall commence on the Effective Date and continue for five (5) years.{' '}
+                <span style={activeRisk && activeRisk.id === 5 ? customStyles.hlMedActive : customStyles.hlMed} onClick={() => setActiveRisk(riskData[4])}>
+                  Either party may terminate for convenience upon 30 days written notice.
+                </span>
+              </p>
+            </>
+          )}
         </div>
       </div>
 
       <div style={customStyles.riskDashboard}>
         <div style={customStyles.panelHeader}>
-          <div style={customStyles.headerTitle}>
-            <WarningIcon />
-            Risk Summary
-          </div>
+          <div style={customStyles.headerTitle}><WarningIcon />Risk Summary</div>
           <div style={{ fontSize: '11px', color: 'rgba(235, 235, 245, 0.6)' }}>Sorted by Severity</div>
         </div>
 
         <div style={customStyles.riskStats}>
           <div style={customStyles.statPill}>
-            <span style={{ ...customStyles.statCount, color: '#FF453A' }}>3</span>
+            <span style={{ ...customStyles.statCount, color: '#FF453A' }}>{highCount}</span>
             <span style={customStyles.statLabel}>Critical</span>
           </div>
           <div style={customStyles.statPill}>
-            <span style={{ ...customStyles.statCount, color: '#FF9F0A' }}>11</span>
+            <span style={{ ...customStyles.statCount, color: '#FF9F0A' }}>{medCount}</span>
             <span style={customStyles.statLabel}>Medium</span>
           </div>
           <div style={customStyles.statPill}>
-            <span style={{ ...customStyles.statCount, color: '#EBEBF5' }}>14</span>
+            <span style={{ ...customStyles.statCount, color: '#EBEBF5' }}>{totalRisks}</span>
             <span style={customStyles.statLabel}>Total Risks</span>
           </div>
         </div>
 
         <div style={customStyles.riskList}>
           {riskData.map((risk) => (
-            <RiskItem key={risk.id} risk={risk} isActive={activeRisk && activeRisk.id === risk.id} onClick={handleRiskClick} />
+            <RiskItem key={risk.id} risk={risk} isActive={activeRisk && activeRisk.id === risk.id} onClick={setActiveRisk} />
           ))}
-          <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(235, 235, 245, 0.3)', fontSize: '11px' }}>
-            + 7 additional medium risks identified below
-          </div>
         </div>
       </div>
     </div>

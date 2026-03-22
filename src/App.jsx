@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
 import IntakePage from './pages/IntakePage.jsx';
 import ProcessingPage from './pages/ProcessingPage.jsx';
 import WorkbenchPage from './pages/WorkbenchPage.jsx';
@@ -23,19 +23,21 @@ const bodyStyle = {
 const Header = ({ docName, showViewSwitcher, activeView, showSettings }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
+  const docId = params.documentId || '';
 
   const viewTabs = ['Processing', 'Workbench', 'Audit Record'];
   const viewRoutes = {
-    'Processing': '/processing',
-    'Workbench': '/workbench',
-    'Audit Record': '/audit',
+    'Processing': docId ? `/processing/${docId}` : '/processing',
+    'Workbench': docId ? `/workbench/${docId}` : '/workbench',
+    'Audit Record': docId ? `/audit/${docId}` : '/audit',
   };
 
   const currentView = activeView || (() => {
-    if (location.pathname === '/processing') return 'Processing';
-    if (location.pathname === '/workbench') return 'Workbench';
-    if (location.pathname === '/risks') return 'Workbench';
-    if (location.pathname === '/audit') return 'Audit Record';
+    if (location.pathname.startsWith('/processing')) return 'Processing';
+    if (location.pathname.startsWith('/workbench')) return 'Workbench';
+    if (location.pathname.startsWith('/risks')) return 'Workbench';
+    if (location.pathname.startsWith('/audit')) return 'Audit Record';
     return null;
   })();
 
@@ -137,15 +139,36 @@ const Header = ({ docName, showViewSwitcher, activeView, showSettings }) => {
   );
 };
 
+const DocHeader = ({ activeView }) => {
+  const { documentId } = useParams();
+  const [docName, setDocName] = React.useState('Loading...');
+
+  React.useEffect(() => {
+    if (!documentId) return;
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/documents/${documentId}`)
+      .then(r => r.json())
+      .then(d => setDocName(d.filename))
+      .catch(() => setDocName('Document'));
+  }, [documentId]);
+
+  return <Header docName={docName} showViewSwitcher activeView={activeView} />;
+};
+
 const App = () => {
   return (
     <div style={bodyStyle}>
       <Routes>
         <Route path="/" element={<><Header /><IntakePage /></>} />
-        <Route path="/processing" element={<><Header docName="Master_Services_Agreement_v4.pdf" showViewSwitcher activeView="Processing" /><ProcessingPage /></>} />
-        <Route path="/workbench" element={<><Header docName="MSA_TechCorp_Acquisition_v3_Final.pdf" showViewSwitcher activeView="Workbench" /><WorkbenchPage /></>} />
-        <Route path="/risks" element={<><Header docName="MSA_TechCorp_Acquisition_v3_Final.pdf" showViewSwitcher activeView="Workbench" /><RiskSummaryPage /></>} />
-        <Route path="/audit" element={<><Header docName="MSA_TechCorp_Acquisition_v3_Final.pdf" showViewSwitcher activeView="Audit Record" /><AuditRecordPage /></>} />
+        {/* Routes with document ID */}
+        <Route path="/processing/:documentId" element={<><DocHeader activeView="Processing" /><ProcessingPage /></>} />
+        <Route path="/workbench/:documentId" element={<><DocHeader activeView="Workbench" /><WorkbenchPage /></>} />
+        <Route path="/risks/:documentId" element={<><DocHeader activeView="Workbench" /><RiskSummaryPage /></>} />
+        <Route path="/audit/:documentId" element={<><DocHeader activeView="Audit Record" /><AuditRecordPage /></>} />
+        {/* Legacy routes (demo mode, no real data) */}
+        <Route path="/processing" element={<><Header docName="Demo Document" showViewSwitcher activeView="Processing" /><ProcessingPage /></>} />
+        <Route path="/workbench" element={<><Header docName="Demo Document" showViewSwitcher activeView="Workbench" /><WorkbenchPage /></>} />
+        <Route path="/risks" element={<><Header docName="Demo Document" showViewSwitcher activeView="Workbench" /><RiskSummaryPage /></>} />
+        <Route path="/audit" element={<><Header docName="Demo Document" showViewSwitcher activeView="Audit Record" /><AuditRecordPage /></>} />
         <Route path="/settings" element={<><Header showSettings /><SettingsPage /></>} />
       </Routes>
     </div>

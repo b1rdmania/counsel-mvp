@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { getDocument } from '../api/client';
 
 const customStyles = {
   filterBar: {
@@ -207,11 +209,40 @@ const AuditDetailModal = ({ event, onClose }) => {
 };
 
 const AuditRecordPage = () => {
+  const { documentId } = useParams();
+  const isLive = !!documentId;
+
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredRow, setHoveredRow] = useState(null);
+  const [liveEvents, setLiveEvents] = useState([]);
 
-  const filteredEvents = auditEvents.filter(event => {
+  useEffect(() => {
+    if (!isLive) return;
+    getDocument(documentId).then(doc => {
+      if (doc.audit_log && doc.audit_log.length > 0) {
+        setLiveEvents(doc.audit_log.map(a => ({
+          id: a.id,
+          timestamp: new Date(a.timestamp).toLocaleString(),
+          user: a.agent_id === 'human' ? 'Lawyer' : `System (${a.agent_id.replace(/_/g, ' ')})`,
+          action: a.status === 'success' ? 'Completed' : a.status,
+          actionColor: a.status === 'success' ? '#32D74B' : a.status === 'failed' ? '#FF453A' : '#0A84FF',
+          clause: a.action,
+          summary: `${a.model || 'system'} — ${a.tokens_in + a.tokens_out} tokens, ${a.duration_ms}ms`,
+          detail: {
+            actor: a.agent_id, timestampFull: a.timestamp,
+            clauseIdentity: a.action, actionTaken: a.status,
+            actionColor: a.status === 'success' ? '#32D74B' : '#FF453A',
+            diffRef: a.agent_id, reasoning: `Model: ${a.model || 'N/A'}, Input tokens: ${a.tokens_in}, Output tokens: ${a.tokens_out}, Duration: ${a.duration_ms}ms`,
+          },
+        })));
+      }
+    }).catch(console.error);
+  }, [isLive, documentId]);
+
+  const allEvents = liveEvents.length > 0 ? liveEvents : auditEvents;
+
+  const filteredEvents = allEvents.filter(event => {
     const term = searchTerm.toLowerCase();
     return (
       event.timestamp.toLowerCase().includes(term) ||
