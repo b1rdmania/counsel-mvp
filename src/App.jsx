@@ -145,7 +145,7 @@ const DocHeader = ({ activeView }) => {
 
   React.useEffect(() => {
     if (!documentId) return;
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/documents/${documentId}`)
+    fetch(`/api/documents/${documentId}`)
       .then(r => r.json())
       .then(d => setDocName(d.filename))
       .catch(() => setDocName('Document'));
