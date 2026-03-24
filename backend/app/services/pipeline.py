@@ -44,8 +44,10 @@ async def run_pipeline(document_id: str):
         # --- Agent 1: Parse ---
         await _update_status(document_id, "parsing")
         parser = ParserAgent()
+        print(f"[PIPELINE] Starting parser for {document_id}")
         parse_result = await parser.execute({"raw_text": raw_text}, document_id)
         parsed = parse_result.data
+        print(f"[PIPELINE] Parser returned {len(parsed.get('clauses', []))} clauses")
 
         # Store clauses
         db = await get_db()
@@ -71,6 +73,7 @@ async def run_pipeline(document_id: str):
             )
         await db.commit()
         await db.close()
+        print(f"[PIPELINE] Stored {len(clauses)} clauses, moving to analysis")
 
         # --- Agent 2: Analyse ---
         await _update_status(document_id, "analysing")
@@ -187,6 +190,9 @@ async def run_pipeline(document_id: str):
         await _update_status(document_id, "review_pending")
 
     except Exception as e:
+        import traceback
+        print(f"[PIPELINE] ERROR: {e}")
+        traceback.print_exc()
         # Mark as failed but keep any partial results
         await _update_status(document_id, "failed")
         # Log the failure

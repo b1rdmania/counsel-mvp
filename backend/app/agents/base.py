@@ -12,7 +12,7 @@ from ..config import ANTHROPIC_API_KEY
 from ..database import get_db
 
 
-client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
 
 class AgentResult:
@@ -63,7 +63,7 @@ class BaseAgent:
         result_data = {}
 
         try:
-            response = client.messages.create(
+            response = await client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 system=system_prompt,
