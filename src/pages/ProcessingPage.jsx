@@ -27,20 +27,18 @@ const statusLabels = {
 const ProcessingPage = () => {
   const navigate = useNavigate();
   const { documentId } = useParams();
-  const isLive = !!documentId;
 
   const [progress, setProgress] = useState(0);
   const [clausesFound, setClausesFound] = useState(0);
   const [criticalRisks, setCriticalRisks] = useState(0);
-  const [streamPaused, setStreamPaused] = useState(false);
-  const [statusLabel, setStatusLabel] = useState('Extracting Entities...');
+  const [statusLabel, setStatusLabel] = useState('Waiting...');
   const [docData, setDocData] = useState(null);
   const [failed, setFailed] = useState(false);
   const [auditEntries, setAuditEntries] = useState([]);
 
   // Live polling mode
   useEffect(() => {
-    if (!isLive) return;
+    if (!documentId) return;
 
     const poll = async () => {
       try {
@@ -84,41 +82,24 @@ const ProcessingPage = () => {
     poll();
     const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [isLive, documentId, navigate]);
+  }, [documentId, navigate]);
 
-  // Demo simulation mode (no documentId)
-  useEffect(() => {
-    if (isLive || streamPaused) return;
-    const interval = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setTimeout(() => navigate('/workbench'), 800);
-          return 100;
-        }
-        return p + 2;
-      });
-      setClausesFound(c => Math.min(c + 3, 142));
-      setCriticalRisks(r => {
-        if (r < 8 && Math.random() > 0.7) return r + 1;
-        return r;
-      });
-    }, 300);
-    return () => clearInterval(interval);
-  }, [isLive, streamPaused, navigate]);
+  // No documentId — show empty state
+  if (!documentId) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E1E20' }}>
+        <div style={{ textAlign: 'center', color: 'rgba(235, 235, 245, 0.6)', fontSize: '16px' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.3 }}>&#128196;</div>
+          <div style={{ fontWeight: 600, marginBottom: '4px', color: '#EBEBF5' }}>No document selected</div>
+          <div style={{ fontSize: '13px' }}>Upload a document from the intake page to begin processing.</div>
+        </div>
+      </div>
+    );
+  }
 
-  const deviations = docData ? (docData.medium_risk || 0) : 21;
+  const deviations = docData ? (docData.medium_risk || 0) : 0;
 
-  // Build table rows: use real audit entries if live, demo data otherwise
-  const tableRows = auditEntries.length > 0 ? auditEntries : [
-    { id: 1, time: '14:22:11.802', domain: 'Indemnification', entity: 'Section 14.2: IP Infringement Third Party Defense', conf: '99.2%', confColor: '#32D74B', status: 'High Deviation', statusColor: '#FF453A', dotClass: 'high', rowBg: 'rgba(10, 132, 255, 0.05)' },
-    { id: 2, time: '14:22:10.450', domain: 'Liability', entity: 'Section 12.1: Mutual Limitation of Liability', conf: '94.8%', confColor: 'rgba(235, 235, 245, 0.3)', status: 'Non-Standard', statusColor: '#FF9F0A', dotClass: 'medium', rowBg: 'rgba(10, 132, 255, 0.05)' },
-    { id: 3, time: '14:22:08.112', domain: 'Governance', entity: 'Section 22: Governing Law (State of Delaware)', conf: '99.9%', confColor: 'rgba(235, 235, 245, 0.3)', status: 'Compliant', statusColor: '#32D74B', dotClass: 'safe', rowBg: 'transparent' },
-    { id: 4, time: '14:22:06.503', domain: 'Termination', entity: 'Section 9.4: Termination for Convenience (30 Days)', conf: '92.1%', confColor: 'rgba(235, 235, 245, 0.3)', status: 'Compliant', statusColor: '#32D74B', dotClass: 'safe', rowBg: 'transparent' },
-    { id: 5, time: '14:22:05.882', domain: 'Confidentiality', entity: 'Section 10.1: Definitions of Sensitive Data', conf: '98.5%', confColor: 'rgba(235, 235, 245, 0.3)', status: 'Standard', statusColor: '#32D74B', dotClass: 'safe', rowBg: 'transparent' },
-    { id: 6, time: '14:22:04.221', domain: 'Financials', entity: 'Section 4.2: Payment Terms (Net 60)', conf: '96.2%', confColor: 'rgba(235, 235, 245, 0.3)', status: 'Review Flag', statusColor: '#FF9F0A', dotClass: 'medium', rowBg: 'transparent' },
-    { id: 7, time: '14:22:03.900', domain: 'Definitions', entity: 'Processing semantic vectors for "Force Majeure"...', conf: '--', confColor: 'rgba(235, 235, 245, 0.3)', status: 'Analyzing', statusColor: '#0A84FF', dotClass: 'proc', rowBg: 'rgba(10, 132, 255, 0.02)' },
-  ];
+  const tableRows = auditEntries;
 
   const getDotStyle = (dotClass) => {
     const base = { width: 6, height: 6, borderRadius: '50%', display: 'inline-block' };
@@ -157,12 +138,12 @@ const ProcessingPage = () => {
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #38383A', padding: 16, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235, 235, 245, 0.3)' }}>Clauses Found</span>
             <span style={{ fontSize: 24, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{clausesFound}</span>
-            <span style={{ fontSize: 10, color: '#32D74B', display: 'flex', alignItems: 'center', gap: 2 }}>{isLive ? 'Live' : '+3 new'}</span>
+            <span style={{ fontSize: 10, color: '#32D74B', display: 'flex', alignItems: 'center', gap: 2 }}>Live</span>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #38383A', padding: 16, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235, 235, 245, 0.3)' }}>Critical Risks</span>
             <span style={{ fontSize: 24, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: '#FF453A' }}>{criticalRisks}</span>
-            <span style={{ fontSize: 10, color: '#FF453A', display: 'flex', alignItems: 'center', gap: 2 }}>{isLive ? 'Live' : '+1 detected'}</span>
+            <span style={{ fontSize: 10, color: '#FF453A', display: 'flex', alignItems: 'center', gap: 2 }}>Live</span>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #38383A', padding: 16, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235, 235, 245, 0.3)' }}>Deviations</span>
@@ -171,7 +152,7 @@ const ProcessingPage = () => {
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #38383A', padding: 16, borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235, 235, 245, 0.3)' }}>Knowledge Match</span>
-            <span style={{ fontSize: 24, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>94%</span>
+            <span style={{ fontSize: 24, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>--</span>
             <span style={{ fontSize: 10, color: 'rgba(235, 235, 245, 0.3)', display: 'flex', alignItems: 'center', gap: 2 }}>Global Policy</span>
           </div>
         </div>
@@ -180,11 +161,7 @@ const ProcessingPage = () => {
         <div style={{ marginTop: 'auto', padding: 16, background: 'rgba(10, 132, 255, 0.05)', borderRadius: 8, border: '1px dashed #0A84FF' }}>
           <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#0A84FF', marginBottom: 8 }}>Active Context</div>
           <div style={{ fontSize: 12, lineHeight: 1.4, color: 'rgba(235, 235, 245, 0.6)' }}>
-            {isLive ? (
-              <>Processing <strong>{docData?.filename || 'document'}</strong> through 4-agent pipeline...</>
-            ) : (
-              <>Applying <strong>Fortune 500 Compliance</strong> playbook...</>
-            )}
+            Processing <strong>{docData?.filename || 'document'}</strong> through 4-agent pipeline...
           </div>
         </div>
       </aside>
@@ -194,56 +171,54 @@ const ProcessingPage = () => {
         <div style={{ height: 48, padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #48484A', backgroundColor: '#262628' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: failed ? '#FF453A' : '#0A84FF' }}>
             <div style={{ width: 8, height: 8, backgroundColor: failed ? '#FF453A' : '#0A84FF', borderRadius: '50%', boxShadow: `0 0 8px ${failed ? '#FF453A' : '#0A84FF'}` }} />
-            <span>{isLive ? `Pipeline — ${statusLabel}` : `Neural Extraction Engine — ${streamPaused ? 'Paused' : 'Active Stream'}`}</span>
+            <span>{`Pipeline — ${statusLabel}`}</span>
           </div>
-          {!isLive && (
-            <button
-              onClick={() => setStreamPaused(!streamPaused)}
-              style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid #38383A', padding: '4px 10px', color: 'rgba(235, 235, 245, 0.6)', fontSize: 12, fontWeight: 500, borderRadius: 4, cursor: 'pointer' }}
-            >
-              {streamPaused ? 'Resume Stream' : 'Pause Stream'}
-            </button>
-          )}
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, width: 100 }}>Time</th>
-                <th style={{ ...thStyle, width: 180 }}>Domain</th>
-                <th style={thStyle}>Entity / Clause Analysis</th>
-                <th style={{ ...thStyle, width: 100 }}>Conf.</th>
-                <th style={{ ...thStyle, width: 160 }}>System Tag</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableRows.map((row) => (
-                <tr key={row.id} style={{ backgroundColor: row.rowBg || 'transparent' }}>
-                  <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontFamily: '"SF Mono", "Menlo", "Consolas", monospace', color: 'rgba(235, 235, 245, 0.3)', fontSize: 11, verticalAlign: 'middle' }}>
-                    {row.time}
-                  </td>
-                  <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', verticalAlign: 'middle' }}>
-                    <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.05)', border: '1px solid #38383A', fontSize: 11, color: 'rgba(235, 235, 245, 0.6)' }}>
-                      {row.domain}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'rgba(235, 235, 245, 0.6)', verticalAlign: 'middle' }}>
-                    {row.entity}
-                  </td>
-                  <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontFamily: '"SF Mono", "Menlo", "Consolas", monospace', color: row.confColor, fontSize: 11, verticalAlign: 'middle' }}>
-                    {row.conf}
-                  </td>
-                  <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', verticalAlign: 'middle' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500, color: row.statusColor }}>
-                      <div style={getDotStyle(row.dotClass)} />
-                      {row.status}
-                    </span>
-                  </td>
+          {tableRows.length > 0 ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ ...thStyle, width: 100 }}>Time</th>
+                  <th style={{ ...thStyle, width: 180 }}>Domain</th>
+                  <th style={thStyle}>Entity / Clause Analysis</th>
+                  <th style={{ ...thStyle, width: 100 }}>Conf.</th>
+                  <th style={{ ...thStyle, width: 160 }}>System Tag</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {tableRows.map((row) => (
+                  <tr key={row.id} style={{ backgroundColor: row.rowBg || 'transparent' }}>
+                    <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontFamily: '"SF Mono", "Menlo", "Consolas", monospace', color: 'rgba(235, 235, 245, 0.3)', fontSize: 11, verticalAlign: 'middle' }}>
+                      {row.time}
+                    </td>
+                    <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', verticalAlign: 'middle' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.05)', border: '1px solid #38383A', fontSize: 11, color: 'rgba(235, 235, 245, 0.6)' }}>
+                        {row.domain}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'rgba(235, 235, 245, 0.6)', verticalAlign: 'middle' }}>
+                      {row.entity}
+                    </td>
+                    <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontFamily: '"SF Mono", "Menlo", "Consolas", monospace', color: row.confColor, fontSize: 11, verticalAlign: 'middle' }}>
+                      {row.conf}
+                    </td>
+                    <td style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', verticalAlign: 'middle' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500, color: row.statusColor }}>
+                        <div style={getDotStyle(row.dotClass)} />
+                        {row.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(235, 235, 245, 0.3)', fontSize: '13px' }}>
+              Waiting for pipeline events...
+            </div>
+          )}
         </div>
 
         <footer style={{ height: 32, backgroundColor: '#262628', borderTop: '1px solid #48484A', padding: '0 20px', display: 'flex', alignItems: 'center', fontSize: 11, color: 'rgba(235, 235, 245, 0.3)', gap: 16 }}>
@@ -251,12 +226,12 @@ const ProcessingPage = () => {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
             </svg>
-            {isLive ? 'Claude API: Connected' : 'Network: Stable'}
+            Claude API: Connected
           </span>
           <span>|</span>
-          <span>{isLive ? `Pipeline: ${statusLabel}` : 'GPU Clusters: 4/4 Online'}</span>
+          <span>{`Pipeline: ${statusLabel}`}</span>
           <span>|</span>
-          <span style={{ color: '#0A84FF' }}>{isLive ? 'Zero Data Retention' : 'Auto-save enabled'}</span>
+          <span style={{ color: '#0A84FF' }}>Zero Data Retention</span>
         </footer>
       </main>
     </div>

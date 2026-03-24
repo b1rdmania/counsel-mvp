@@ -33,16 +33,6 @@ const customStyles = {
   actionLink: { fontSize: '11px', color: '#0A84FF', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' },
 };
 
-const demoRiskData = [
-  { id: 1, severity: 'high', clause: 'Clause 8.1(c)', title: 'Uncapped IP Indemnification', preview: 'Strict liability for IP infringement regardless of knowledge or foreseeability.' },
-  { id: 2, severity: 'high', clause: 'Clause 9.1', title: 'Broad Direct Damage Exclusion', preview: 'Potential exclusion of core service failure damages.' },
-  { id: 3, severity: 'high', clause: 'Clause 14.2', title: 'Unlimited Audit Rights', preview: 'Customer may audit Vendor facilities at any time without prior notice.' },
-  { id: 4, severity: 'medium', clause: 'Clause 8.2', title: 'Asymmetric Indemnity Caps', preview: 'Purchaser indemnity is capped while Vendor indemnity remains uncapped.' },
-  { id: 5, severity: 'medium', clause: 'Clause 10.1', title: 'Termination for Convenience', preview: '30-day notice period is shorter than market standard.' },
-  { id: 6, severity: 'medium', clause: 'Clause 4.3', title: 'Net 90 Payment Terms', preview: 'Payment cycle exceeds typical Net 30/45.' },
-  { id: 7, severity: 'medium', clause: 'Clause 22.1', title: 'Governing Law: England & Wales', preview: 'Deviation from US HQ standard (Delaware).' },
-];
-
 const WarningIcon = () => (
   <svg style={{ width: '14px', height: '14px', fill: '#FF453A' }} viewBox="0 0 24 24">
     <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
@@ -80,17 +70,17 @@ const RiskItem = ({ risk, isActive, onClick }) => {
 
 const RiskSummaryPage = () => {
   const { documentId } = useParams();
-  const isLive = !!documentId;
 
-  const [riskData, setRiskData] = useState(demoRiskData);
+  const [riskData, setRiskData] = useState([]);
   const [activeRisk, setActiveRisk] = useState(null);
   const [summary, setSummary] = useState(null);
-  const [highCount, setHighCount] = useState(3);
-  const [medCount, setMedCount] = useState(11);
+  const [highCount, setHighCount] = useState(0);
+  const [medCount, setMedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLive) {
-      setActiveRisk(demoRiskData[0]);
+    if (!documentId) {
+      setLoading(false);
       return;
     }
 
@@ -113,10 +103,34 @@ const RiskSummaryPage = () => {
       setHighCount(doc.high_risk || 0);
       setMedCount(doc.medium_risk || 0);
       if (doc.summary) setSummary(doc.summary);
-    }).catch(console.error);
-  }, [isLive, documentId]);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, [documentId]);
 
   const totalRisks = highCount + medCount;
+
+  if (!documentId) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E1E20' }}>
+        <div style={{ textAlign: 'center', color: 'rgba(235, 235, 245, 0.6)', fontSize: '16px' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.3 }}>&#9888;</div>
+          <div style={{ fontWeight: 600, marginBottom: '4px', color: '#EBEBF5' }}>No risk data available</div>
+          <div style={{ fontSize: '13px' }}>No document selected.</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E1E20' }}>
+        <div style={{ color: 'rgba(235, 235, 245, 0.6)', fontSize: '14px' }}>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={customStyles.mainWorkspace}>
@@ -170,28 +184,9 @@ const RiskSummaryPage = () => {
               )}
             </>
           ) : (
-            // Demo content
-            <>
-              <h2 style={customStyles.documentH2}>8. Indemnification</h2>
-              <p>
-                8.1 <strong>By Vendor.</strong> Vendor shall indemnify, defend, and hold harmless Purchaser and its
-                officers, directors, employees, and agents from and against any and all claims, damages, liabilities,
-                costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) any breach of
-                Vendor's representations or warranties herein; (b) any negligence or willful misconduct by Vendor; or{' '}
-                <span style={activeRisk && activeRisk.id === 1 ? customStyles.hlHighActive : customStyles.hlHigh} onClick={() => setActiveRisk(riskData[0])}>
-                  (c) any claim that the Services or Deliverables infringe upon the intellectual property rights of any
-                  third party, regardless of whether such infringement was reasonably foreseeable or known to Vendor.
-                </span>
-              </p>
-              <h2 style={customStyles.documentH2}>9. Limitation of Liability</h2>
-              <p>IN NO EVENT SHALL EITHER PARTY BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES.</p>
-              <h2 style={customStyles.documentH2}>10. Term and Termination</h2>
-              <p>10.1 <strong>Term.</strong> This Agreement shall commence on the Effective Date and continue for five (5) years.{' '}
-                <span style={activeRisk && activeRisk.id === 5 ? customStyles.hlMedActive : customStyles.hlMed} onClick={() => setActiveRisk(riskData[4])}>
-                  Either party may terminate for convenience upon 30 days written notice.
-                </span>
-              </p>
-            </>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(235, 235, 245, 0.3)', fontSize: '14px' }}>
+              No risk data available for this document.
+            </div>
           )}
         </div>
       </div>
@@ -218,9 +213,13 @@ const RiskSummaryPage = () => {
         </div>
 
         <div style={customStyles.riskList}>
-          {riskData.map((risk) => (
+          {riskData.length > 0 ? riskData.map((risk) => (
             <RiskItem key={risk.id} risk={risk} isActive={activeRisk && activeRisk.id === risk.id} onClick={setActiveRisk} />
-          ))}
+          )) : (
+            <div style={{ color: 'rgba(235, 235, 245, 0.3)', fontSize: '13px', textAlign: 'center', marginTop: '24px' }}>
+              No risks identified.
+            </div>
+          )}
         </div>
       </div>
     </div>

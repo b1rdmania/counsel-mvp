@@ -44,54 +44,12 @@ const customStyles = {
   metaItem: { display: 'flex', flexDirection: 'column', gap: '4px' },
   metaLabel: { fontSize: '10px', textTransform: 'uppercase', color: 'rgba(235, 235, 245, 0.3)', fontWeight: 600, letterSpacing: '0.5px' },
   metaValue: { fontSize: '13px', color: '#EBEBF5' },
-  diffPane: { backgroundColor: '#000', borderRadius: '6px', overflow: 'hidden', border: '1px solid #38383A' },
-  diffHeader: { backgroundColor: '#38383A', padding: '6px 12px', fontSize: '11px', fontWeight: 600, color: 'rgba(235, 235, 245, 0.6)', display: 'flex', justifyContent: 'space-between' },
-  diffContent: { padding: '16px', fontFamily: '"SF Mono", "Menlo", "Consolas", monospace', fontSize: '12px', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: '#EBEBF5' },
-  diffRemoved: { backgroundColor: 'rgba(255, 69, 58, 0.15)', color: '#FF8A84', textDecoration: 'line-through', padding: '0 4px', borderRadius: '2px' },
-  diffAdded: { backgroundColor: 'rgba(50, 215, 75, 0.15)', color: '#32D74B', padding: '0 4px', borderRadius: '2px' },
   reasoningBox: { backgroundColor: 'rgba(10, 132, 255, 0.15)', borderLeft: '3px solid #0A84FF', padding: '12px 16px', borderRadius: '0 6px 6px 0' },
   modalFooter: { padding: '16px 20px', borderTop: '1px solid #48484A', display: 'flex', justifyContent: 'flex-end', gap: '12px', backgroundColor: 'rgba(0,0,0,0.1)' },
   btn: { padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer', border: '1px solid transparent', transition: '0.1s' },
   btnSecondary: { background: 'transparent', borderColor: '#48484A', color: '#EBEBF5' },
-  btnDanger: { background: 'transparent', borderColor: '#FF453A', color: '#FF453A' },
   icon: { width: '14px', height: '14px', fill: 'currentColor' },
 };
-
-const auditEvents = [
-  {
-    id: 1, timestamp: 'Oct 24, 2023 · 14:15:22', user: 'A. Mercer (Partner)',
-    action: 'Accepted Edit', actionColor: '#32D74B', clause: 'Sec 8.1(c) IP Indemnity',
-    summary: "Removed strict liability language and added 'valid' qualifier.",
-    detail: {
-      actor: 'A. Mercer (Partner)', timestampFull: 'October 24, 2023 at 14:15:22 GMT-4',
-      clauseIdentity: 'Section 8.1(c) — Intellectual Property Indemnification',
-      actionTaken: 'Accepted AI Revision', actionColor: '#32D74B', diffRef: 'SEC 8.1(c)',
-      reasoning: 'Client policy forbids uncapped strict liability on IP. The addition of "valid" ensures we aren\'t liable for frivolous or expired patent claims. Removed foreseeable clause to align with market standard SaaS terms.',
-    },
-  },
-  {
-    id: 2, timestamp: 'Oct 24, 2023 · 14:12:05', user: 'A. Mercer (Partner)',
-    action: 'Rejected Edit', actionColor: '#FF9F0A', clause: 'Sec 8.2 Purchaser Cap',
-    summary: 'Maintained existing liability cap for purchaser designs.',
-    detail: {
-      actor: 'A. Mercer (Partner)', timestampFull: 'October 24, 2023 at 14:12:05 GMT-4',
-      clauseIdentity: 'Section 8.2 — Purchaser Liability Cap',
-      actionTaken: 'Rejected AI Revision', actionColor: '#FF9F0A', diffRef: 'SEC 8.2',
-      reasoning: 'Existing liability cap for purchaser is within acceptable bounds. No change warranted.',
-    },
-  },
-  {
-    id: 3, timestamp: 'Oct 24, 2023 · 14:10:11', user: 'System (Counsel)',
-    action: 'Flagged', actionColor: '#0A84FF', clause: 'Sec 8.1(c) IP Indemnity',
-    summary: 'High severity risk: Uncapped liability detected.',
-    detail: {
-      actor: 'System (Counsel)', timestampFull: 'October 24, 2023 at 14:10:11 GMT-4',
-      clauseIdentity: 'Section 8.1(c) — Intellectual Property Indemnification',
-      actionTaken: 'Flagged', actionColor: '#0A84FF', diffRef: 'SEC 8.1(c)',
-      reasoning: 'Automated analysis detected uncapped strict liability language. High severity risk flagged for partner review.',
-    },
-  },
-];
 
 const CloseIcon = () => (
   <svg style={customStyles.icon} viewBox="0 0 24 24">
@@ -99,15 +57,8 @@ const CloseIcon = () => (
   </svg>
 );
 
-const RevertIcon = () => (
-  <svg style={{ width: '12px', height: '12px', fill: 'currentColor' }} viewBox="0 0 24 24">
-    <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" />
-  </svg>
-);
-
 const AuditDetailModal = ({ event, onClose }) => {
   const [btnSecHover, setBtnSecHover] = useState(false);
-  const [btnDangerHover, setBtnDangerHover] = useState(false);
 
   if (!event) return null;
   const d = event.detail;
@@ -140,43 +91,8 @@ const AuditDetailModal = ({ event, onClose }) => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <span style={customStyles.metaLabel}>Text Comparison</span>
-            <div style={customStyles.diffPane}>
-              <div style={customStyles.diffHeader}>
-                <span>UNIFIED DIFF VIEW</span>
-                <span>{d.diffRef}</span>
-              </div>
-              <div style={customStyles.diffContent}>
-                {event.id === 1 ? (
-                  <>
-                    {'(c) any claim that the Services or Deliverables infringe upon the '}
-                    <span style={customStyles.diffAdded}>valid</span>
-                    {' intellectual property rights of any third party, '}
-                    <span style={customStyles.diffRemoved}>
-                      regardless of whether such infringement was reasonably foreseeable or known to Vendor.
-                    </span>
-                  </>
-                ) : event.id === 2 ? (
-                  <>
-                    {'The total aggregate liability of Purchaser under this Agreement shall not exceed '}
-                    <span style={customStyles.diffRemoved}>the greater of $10,000,000 or two times the fees paid.</span>
-                    <span style={customStyles.diffAdded}>the fees paid in the twelve months prior to the claim.</span>
-                  </>
-                ) : (
-                  <>
-                    {'(c) any claim that the Services or Deliverables infringe upon the intellectual property rights of any third party, '}
-                    <span style={{ color: '#FF453A', padding: '0 4px' }}>
-                      [FLAGGED: uncapped strict liability — no "valid" qualifier, no foreseeability limitation]
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
           <div style={customStyles.metaItem}>
-            <span style={customStyles.metaLabel}>Reasoning & Internal Notes</span>
+            <span style={customStyles.metaLabel}>Details</span>
             <div style={customStyles.reasoningBox}>
               <span style={customStyles.metaValue}>{d.reasoning}</span>
             </div>
@@ -192,16 +108,6 @@ const AuditDetailModal = ({ event, onClose }) => {
           >
             Close
           </button>
-          <button
-            style={{ ...customStyles.btn, ...customStyles.btnDanger, ...(btnDangerHover ? { background: 'rgba(255, 69, 58, 0.1)' } : {}) }}
-            onMouseEnter={() => setBtnDangerHover(true)}
-            onMouseLeave={() => setBtnDangerHover(false)}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <RevertIcon />
-              Revert Decision
-            </div>
-          </button>
         </div>
       </div>
     </div>
@@ -210,18 +116,21 @@ const AuditDetailModal = ({ event, onClose }) => {
 
 const AuditRecordPage = () => {
   const { documentId } = useParams();
-  const isLive = !!documentId;
 
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredRow, setHoveredRow] = useState(null);
-  const [liveEvents, setLiveEvents] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLive) return;
+    if (!documentId) {
+      setLoading(false);
+      return;
+    }
     getDocument(documentId).then(doc => {
       if (doc.audit_log && doc.audit_log.length > 0) {
-        setLiveEvents(doc.audit_log.map(a => ({
+        setEvents(doc.audit_log.map(a => ({
           id: a.id,
           timestamp: new Date(a.timestamp).toLocaleString(),
           user: a.agent_id === 'human' ? 'Lawyer' : `System (${a.agent_id.replace(/_/g, ' ')})`,
@@ -237,12 +146,14 @@ const AuditRecordPage = () => {
           },
         })));
       }
-    }).catch(console.error);
-  }, [isLive, documentId]);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, [documentId]);
 
-  const allEvents = liveEvents.length > 0 ? liveEvents : auditEvents;
-
-  const filteredEvents = allEvents.filter(event => {
+  const filteredEvents = events.filter(event => {
     const term = searchTerm.toLowerCase();
     return (
       event.timestamp.toLowerCase().includes(term) ||
@@ -266,44 +177,58 @@ const AuditRecordPage = () => {
       </div>
 
       <div style={customStyles.dataTableWrapper}>
-        <table style={customStyles.dataTable}>
-          <thead>
-            <tr>
-              <th style={{ ...customStyles.dataTableTh, width: '180px' }}>Timestamp</th>
-              <th style={{ ...customStyles.dataTableTh, width: '180px' }}>User</th>
-              <th style={{ ...customStyles.dataTableTh, width: '120px' }}>Action</th>
-              <th style={{ ...customStyles.dataTableTh, width: '200px' }}>Target Clause</th>
-              <th style={customStyles.dataTableTh}>Summary of Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEvents.map(event => (
-              <tr
-                key={event.id}
-                onClick={() => setSelectedEvent(event)}
-                onMouseEnter={() => setHoveredRow(event.id)}
-                onMouseLeave={() => setHoveredRow(null)}
-                style={{ cursor: 'pointer' }}
-              >
-                <td style={{ ...customStyles.dataTableTd, ...customStyles.tdMono, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
-                  {event.timestamp}
-                </td>
-                <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
-                  {event.user}
-                </td>
-                <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
-                  <span style={{ color: event.actionColor }}>{event.action}</span>
-                </td>
-                <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
-                  {event.clause}
-                </td>
-                <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
-                  {event.summary}
-                </td>
+        {!documentId ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(235, 235, 245, 0.3)', fontSize: '14px', padding: '40px' }}>
+            No document selected.
+          </div>
+        ) : loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(235, 235, 245, 0.6)', fontSize: '14px' }}>
+            Loading...
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(235, 235, 245, 0.3)', fontSize: '14px', padding: '40px' }}>
+            No audit records{searchTerm ? ' matching your search' : ''}.
+          </div>
+        ) : (
+          <table style={customStyles.dataTable}>
+            <thead>
+              <tr>
+                <th style={{ ...customStyles.dataTableTh, width: '180px' }}>Timestamp</th>
+                <th style={{ ...customStyles.dataTableTh, width: '180px' }}>User</th>
+                <th style={{ ...customStyles.dataTableTh, width: '120px' }}>Action</th>
+                <th style={{ ...customStyles.dataTableTh, width: '200px' }}>Target Clause</th>
+                <th style={customStyles.dataTableTh}>Summary of Change</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredEvents.map(event => (
+                <tr
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  onMouseEnter={() => setHoveredRow(event.id)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td style={{ ...customStyles.dataTableTd, ...customStyles.tdMono, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
+                    {event.timestamp}
+                  </td>
+                  <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
+                    {event.user}
+                  </td>
+                  <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
+                    <span style={{ color: event.actionColor }}>{event.action}</span>
+                  </td>
+                  <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
+                    {event.clause}
+                  </td>
+                  <td style={{ ...customStyles.dataTableTd, ...(hoveredRow === event.id ? { backgroundColor: 'rgba(255, 255, 255, 0.05)' } : {}) }}>
+                    {event.summary}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {selectedEvent && (

@@ -497,8 +497,8 @@ const IntakePage = () => {
                 );
                 navigate(`/processing/${doc.id}`);
               } catch (err) {
-                // No backend available — fall through to demo mode
-                navigate('/processing');
+                setUploading(false);
+                setUploadError(err.message || 'Upload failed. Please try again.');
               }
             }}
           >

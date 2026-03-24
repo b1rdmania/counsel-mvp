@@ -5,7 +5,6 @@ import { getDocument, submitReview } from '../api/client';
 const WorkbenchPage = () => {
   const navigate = useNavigate();
   const { documentId } = useParams();
-  const isLive = !!documentId;
 
   const [redlines, setRedlines] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,16 +12,11 @@ const WorkbenchPage = () => {
   const [comments, setComments] = useState([]);
   const [declineClicked, setDeclineClicked] = useState(false);
   const [applyClicked, setApplyClicked] = useState(false);
-
-  // Default demo comments
-  const demoComments = [
-    { id: 1, isAI: true, name: 'Stella Counsel', timestamp: 'Just now', badge: 'INSIGHT', text: "The original language creates a strict liability standard. I have added a \"knowledge qualifier\" and limited the scope to \"valid\" rights to align with Section 4.2 of the firm's standard Master Services Agreement.", borderLeft: true },
-    { id: 2, isAI: false, initials: 'AM', name: 'A. Mercer (Partner)', timestamp: '12 minutes ago', text: "The knowledge qualifier is essential here. TechCorp has a history of broad IP claims; we cannot accept uncapped liability for unknown third-party patents.", borderLeft: false },
-  ];
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLive) {
-      setComments(demoComments);
+    if (!documentId) {
+      setLoading(false);
       return;
     }
 
@@ -36,29 +30,43 @@ const WorkbenchPage = () => {
           badge: 'INSIGHT', text: first.explanation, borderLeft: true,
         }]);
       }
-    }).catch(console.error);
-  }, [isLive, documentId]);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, [documentId]);
 
   const currentRedline = redlines[currentIndex] || null;
 
-  // Demo data fallback
-  const originalText = currentRedline
-    ? currentRedline.original_text
-    : "(c) any claim that the Services or Deliverables infringe upon the intellectual property rights of any third party, regardless of whether such infringement was reasonably foreseeable or known to Vendor.";
+  // No document or no redlines — show empty state
+  if (!documentId || (!loading && redlines.length === 0)) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E1E20' }}>
+        <div style={{ textAlign: 'center', color: 'rgba(235, 235, 245, 0.6)', fontSize: '16px' }}>
+          <div style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.3 }}>&#128221;</div>
+          <div style={{ fontWeight: 600, marginBottom: '4px', color: '#EBEBF5' }}>No redlines available</div>
+          <div style={{ fontSize: '13px' }}>
+            {!documentId ? 'No document selected.' : 'No redline suggestions were generated for this document.'}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const suggestedText = currentRedline
-    ? currentRedline.suggested_text
-    : "(c) any claim that the Services or Deliverables infringe upon the valid intellectual property rights of any third party, provided that such infringement was within the actual knowledge of Vendor as of the Effective Date.";
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E1E20' }}>
+        <div style={{ color: 'rgba(235, 235, 245, 0.6)', fontSize: '14px' }}>Loading...</div>
+      </div>
+    );
+  }
 
-  const clauseLabel = currentRedline
-    ? `${currentRedline.section} Redline`
-    : 'Clause 8.1(c) Redline';
-
-  const priorityLabel = currentRedline
-    ? currentRedline.priority.charAt(0).toUpperCase() + currentRedline.priority.slice(1)
-    : 'Critical';
-
-  const priorityColor = currentRedline?.priority === 'critical' ? '#FF453A' : currentRedline?.priority === 'important' ? '#FF9F0A' : '#0A84FF';
+  const originalText = currentRedline.original_text;
+  const suggestedText = currentRedline.suggested_text;
+  const clauseLabel = `${currentRedline.section} Redline`;
+  const priorityLabel = currentRedline.priority.charAt(0).toUpperCase() + currentRedline.priority.slice(1);
+  const priorityColor = currentRedline.priority === 'critical' ? '#FF453A' : currentRedline.priority === 'important' ? '#FF9F0A' : '#0A84FF';
 
   const handleAddComment = () => {
     if (!commentText.trim()) return;
@@ -70,7 +78,7 @@ const WorkbenchPage = () => {
 
   const handleDecline = async () => {
     setDeclineClicked(true);
-    if (isLive && currentRedline) {
+    if (currentRedline) {
       try { await submitReview(documentId, currentRedline.id, 'declined'); } catch (e) { console.error(e); }
     }
     setTimeout(() => {
@@ -85,7 +93,7 @@ const WorkbenchPage = () => {
 
   const handleApply = async () => {
     setApplyClicked(true);
-    if (isLive && currentRedline) {
+    if (currentRedline) {
       try { await submitReview(documentId, currentRedline.id, 'accepted'); } catch (e) { console.error(e); }
     }
     setTimeout(() => {
@@ -117,7 +125,7 @@ const WorkbenchPage = () => {
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              onClick={() => navigate(isLive ? `/risks/${documentId}` : '/risks')}
+              onClick={() => navigate(`/risks/${documentId}`)}
               style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid #38383A', padding: '4px 10px', color: 'rgba(235, 235, 245, 0.6)', fontSize: 12, fontWeight: 500, borderRadius: 4, cursor: 'pointer' }}
             >
               View Risk Summary
@@ -148,7 +156,7 @@ const WorkbenchPage = () => {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {comments.map((comment) => (
+          {comments.length > 0 ? comments.map((comment) => (
             <div key={comment.id} style={{
               backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid #38383A',
               borderLeft: comment.borderLeft ? '2px solid #0A84FF' : '1px solid #38383A',
@@ -175,7 +183,11 @@ const WorkbenchPage = () => {
               </div>
               <div style={{ fontSize: '13px', color: 'rgba(235, 235, 245, 0.6)', lineHeight: '1.4' }}>{comment.text}</div>
             </div>
-          ))}
+          )) : (
+            <div style={{ color: 'rgba(235, 235, 245, 0.3)', fontSize: '13px', textAlign: 'center', marginTop: '24px' }}>
+              No comments yet.
+            </div>
+          )}
         </div>
 
         <div style={{ padding: '16px', borderTop: '1px solid #48484A' }}>
