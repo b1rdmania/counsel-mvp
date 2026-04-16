@@ -1,11 +1,16 @@
 import React from 'react';
-import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import IntakePage from './pages/IntakePage.jsx';
 import ProcessingPage from './pages/ProcessingPage.jsx';
 import WorkbenchPage from './pages/WorkbenchPage.jsx';
 import RiskSummaryPage from './pages/RiskSummaryPage.jsx';
 import AuditRecordPage from './pages/AuditRecordPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import CaseLawPage from './pages/CaseLawPage.jsx';
+import LitigationAdvisorPage from './pages/LitigationAdvisorPage.jsx';
+import ContractScannerPage from './pages/ContractScannerPage.jsx';
+import TimelinePage from './pages/TimelinePage.jsx';
+import LetterDraftingPage from './pages/LetterDraftingPage.jsx';
 
 const bodyStyle = {
   backgroundColor: '#1C1C1E',
@@ -15,162 +20,240 @@ const bodyStyle = {
   lineHeight: '1.5',
   height: '100vh',
   display: 'flex',
-  flexDirection: 'column',
   overflow: 'hidden',
   WebkitFontSmoothing: 'antialiased',
 };
 
-const Header = ({ docName, showViewSwitcher, activeView, showSettings }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const params = useParams();
-  const docId = params.documentId || '';
+const sidebarStyle = {
+  width: '240px',
+  minWidth: '240px',
+  backgroundColor: '#262628',
+  borderRight: '1px solid #48484A',
+  display: 'flex',
+  flexDirection: 'column',
+  flexShrink: 0,
+};
 
-  const viewTabs = ['Processing', 'Workbench', 'Audit Record'];
-  const viewRoutes = {
-    'Processing': docId ? `/processing/${docId}` : '/processing',
-    'Workbench': docId ? `/workbench/${docId}` : '/workbench',
-    'Audit Record': docId ? `/audit/${docId}` : '/audit',
-  };
+const brandingStyle = {
+  height: '56px',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '0 20px',
+  borderBottom: '1px solid #38383A',
+  flexShrink: 0,
+};
 
-  const currentView = activeView || (() => {
-    if (location.pathname.startsWith('/processing')) return 'Processing';
-    if (location.pathname.startsWith('/workbench')) return 'Workbench';
-    if (location.pathname.startsWith('/risks')) return 'Workbench';
-    if (location.pathname.startsWith('/audit')) return 'Audit Record';
-    return null;
-  })();
+const navSectionStyle = {
+  flex: 1,
+  padding: '12px 0',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2px',
+  overflowY: 'auto',
+};
+
+const settingsAreaStyle = {
+  borderTop: '1px solid #38383A',
+  padding: '12px 0',
+};
+
+const mainContentStyle = {
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+};
+
+// SVG Icons for each module
+const ResearchIcon = ({ color }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 1L1 7l11 6 11-6-11-6z" />
+    <path d="M1 17l11 6 11-6" />
+    <path d="M1 12l11 6 11-6" />
+  </svg>
+);
+
+const AdvisorIcon = ({ color }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+    <path d="M2 17l10 5 10-5" />
+    <path d="M2 12l10 5 10-5" />
+    <circle cx="12" cy="12" r="3" fill={color} opacity="0.3" />
+  </svg>
+);
+
+const ScannerIcon = ({ color }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="9" y1="15" x2="15" y2="15" />
+    <line x1="9" y1="11" x2="15" y2="11" />
+  </svg>
+);
+
+const TimelineIcon = ({ color }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const DraftingIcon = ({ color }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+  </svg>
+);
+
+const SettingsIcon = ({ color }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+  </svg>
+);
+
+const navItems = [
+  { path: '/research', label: 'Case Law Research', Icon: ResearchIcon },
+  { path: '/advisor', label: 'Litigation Advisor', Icon: AdvisorIcon },
+  { path: '/scanner', label: 'Contract Scanner', Icon: ScannerIcon },
+  { path: '/timeline', label: 'Timeline Builder', Icon: TimelineIcon },
+  { path: '/drafting', label: 'Letter Drafting', Icon: DraftingIcon },
+];
+
+const NavItem = ({ item, isActive, onClick, isHovered, onHover, onLeave }) => {
+  const color = isActive ? '#0A84FF' : (isHovered ? '#EBEBF5' : 'rgba(235, 235, 245, 0.6)');
 
   return (
-    <header style={{
-      height: '52px',
-      backgroundColor: '#262628',
-      borderBottom: '1px solid #48484A',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 16px',
-      flexShrink: 0,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div
-          style={{ fontWeight: 700, letterSpacing: '-0.5px', color: '#EBEBF5', fontSize: '14px', cursor: 'pointer' }}
-          onClick={() => navigate('/')}
-        >
-          STELLA <span style={{ color: 'rgba(235, 235, 245, 0.6)', fontWeight: 500 }}>COUNSEL</span>
-        </div>
-        {docName && (
-          <div style={{ color: 'rgba(235, 235, 245, 0.6)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ display: 'inline-block', width: '1px', height: '12px', backgroundColor: '#38383A' }} />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
-            </svg>
-            {docName}
-          </div>
-        )}
-        {showSettings && (
-          <div style={{ fontSize: '12px', color: 'rgba(235, 235, 245, 0.3)', marginLeft: '8px' }}>Configuration Mode</div>
-        )}
-      </div>
-
-      {showViewSwitcher && (
-        <nav style={{
-          display: 'flex',
-          backgroundColor: 'rgba(0,0,0,0.2)',
-          borderRadius: '6px',
-          padding: '2px',
-          border: '1px solid #38383A',
-        }}>
-          {viewTabs.map(tab => (
-            <button
-              key={tab}
-              onClick={() => navigate(viewRoutes[tab])}
-              style={{
-                background: currentView === tab ? '#48484A' : 'transparent',
-                border: 'none',
-                color: currentView === tab ? '#EBEBF5' : 'rgba(235, 235, 245, 0.6)',
-                padding: '4px 16px',
-                fontSize: '12px',
-                fontWeight: 500,
-                borderRadius: '4px',
-                cursor: 'pointer',
-                boxShadow: currentView === tab ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
-                transition: 'all 0.15s',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-              }}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
-      )}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {showSettings && (
-          <button
-            onClick={() => {}}
-            style={{
-              backgroundColor: '#0A84FF',
-              color: 'white',
-              border: '1px solid transparent',
-              padding: '4px 12px',
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-            }}
-          >
-            Save Changes
-          </button>
-        )}
-        {!showSettings && (
-          <svg
-            onClick={() => navigate('/settings')}
-            style={{ cursor: 'pointer' }}
-            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(235,235,245,0.6)" strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-        )}
-      </div>
-    </header>
+    <div
+      onClick={onClick}
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '10px 20px',
+        cursor: 'pointer',
+        color,
+        fontSize: '13px',
+        fontWeight: isActive ? 600 : 400,
+        backgroundColor: isActive ? 'rgba(10, 132, 255, 0.1)' : (isHovered ? 'rgba(255, 255, 255, 0.04)' : 'transparent'),
+        borderLeft: isActive ? '3px solid #0A84FF' : '3px solid transparent',
+        transition: 'all 0.15s ease',
+      }}
+    >
+      <item.Icon color={color} />
+      <span>{item.label}</span>
+    </div>
   );
 };
 
-const DocHeader = ({ activeView }) => {
-  const { documentId } = useParams();
-  const [docName, setDocName] = React.useState('Loading...');
+const Sidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [hoveredItem, setHoveredItem] = React.useState(null);
+  const [settingsHovered, setSettingsHovered] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!documentId) return;
-    fetch(`/api/documents/${documentId}`)
-      .then(r => r.json())
-      .then(d => setDocName(d.filename))
-      .catch(() => setDocName('Document'));
-  }, [documentId]);
+  const isActive = (path) => location.pathname.startsWith(path);
 
-  return <Header docName={docName} showViewSwitcher activeView={activeView} />;
+  return (
+    <div style={sidebarStyle}>
+      {/* Branding */}
+      <div style={brandingStyle}>
+        <div
+          style={{ fontWeight: 700, letterSpacing: '-0.5px', color: '#EBEBF5', fontSize: '15px', cursor: 'pointer' }}
+          onClick={() => navigate('/scanner')}
+        >
+          STELLA <span style={{ color: 'rgba(235, 235, 245, 0.6)', fontWeight: 500 }}>COUNSEL</span>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div style={navSectionStyle}>
+        <div style={{ padding: '0 20px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px', color: 'rgba(235, 235, 245, 0.3)', fontWeight: 600 }}>
+            Modules
+          </span>
+        </div>
+        {navItems.map((item) => (
+          <NavItem
+            key={item.path}
+            item={item}
+            isActive={isActive(item.path)}
+            onClick={() => navigate(item.path)}
+            isHovered={hoveredItem === item.path}
+            onHover={() => setHoveredItem(item.path)}
+            onLeave={() => setHoveredItem(null)}
+          />
+        ))}
+      </div>
+
+      {/* Settings */}
+      <div style={settingsAreaStyle}>
+        <div
+          onClick={() => navigate('/settings')}
+          onMouseEnter={() => setSettingsHovered(true)}
+          onMouseLeave={() => setSettingsHovered(false)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '10px 20px',
+            cursor: 'pointer',
+            color: isActive('/settings') ? '#0A84FF' : (settingsHovered ? '#EBEBF5' : 'rgba(235, 235, 245, 0.6)'),
+            fontSize: '13px',
+            fontWeight: isActive('/settings') ? 600 : 400,
+            backgroundColor: isActive('/settings') ? 'rgba(10, 132, 255, 0.1)' : (settingsHovered ? 'rgba(255, 255, 255, 0.04)' : 'transparent'),
+            borderLeft: isActive('/settings') ? '3px solid #0A84FF' : '3px solid transparent',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <SettingsIcon color={isActive('/settings') ? '#0A84FF' : (settingsHovered ? '#EBEBF5' : 'rgba(235, 235, 245, 0.6)')} />
+          <span>Settings</span>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const App = () => {
   return (
     <div style={bodyStyle}>
-      <Routes>
-        <Route path="/" element={<><Header /><IntakePage /></>} />
-        {/* Routes with document ID */}
-        <Route path="/processing/:documentId" element={<><DocHeader activeView="Processing" /><ProcessingPage /></>} />
-        <Route path="/workbench/:documentId" element={<><DocHeader activeView="Workbench" /><WorkbenchPage /></>} />
-        <Route path="/risks/:documentId" element={<><DocHeader activeView="Workbench" /><RiskSummaryPage /></>} />
-        <Route path="/audit/:documentId" element={<><DocHeader activeView="Audit Record" /><AuditRecordPage /></>} />
-        {/* Legacy routes (demo mode, no real data) */}
-        <Route path="/processing" element={<><Header docName="Demo Document" showViewSwitcher activeView="Processing" /><ProcessingPage /></>} />
-        <Route path="/workbench" element={<><Header docName="Demo Document" showViewSwitcher activeView="Workbench" /><WorkbenchPage /></>} />
-        <Route path="/risks" element={<><Header docName="Demo Document" showViewSwitcher activeView="Workbench" /><RiskSummaryPage /></>} />
-        <Route path="/audit" element={<><Header docName="Demo Document" showViewSwitcher activeView="Audit Record" /><AuditRecordPage /></>} />
-        <Route path="/settings" element={<><Header showSettings /><SettingsPage /></>} />
-      </Routes>
+      <Sidebar />
+      <div style={mainContentStyle}>
+        <Routes>
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/scanner" replace />} />
+
+          {/* Case Law Research */}
+          <Route path="/research" element={<CaseLawPage />} />
+
+          {/* Litigation Advisor */}
+          <Route path="/advisor" element={<LitigationAdvisorPage />} />
+
+          {/* Contract Scanner — wraps existing flow */}
+          <Route path="/scanner" element={<ContractScannerPage />} />
+          <Route path="/scanner/upload" element={<ContractScannerPage />} />
+          <Route path="/scanner/processing/:documentId" element={<ContractScannerPage />} />
+          <Route path="/scanner/review/:documentId" element={<ContractScannerPage />} />
+          <Route path="/scanner/risks/:documentId" element={<ContractScannerPage />} />
+          <Route path="/scanner/audit/:documentId" element={<ContractScannerPage />} />
+
+          {/* Timeline Builder */}
+          <Route path="/timeline" element={<TimelinePage />} />
+
+          {/* Letter Drafting */}
+          <Route path="/drafting" element={<LetterDraftingPage />} />
+
+          {/* Settings */}
+          <Route path="/settings" element={<SettingsPage />} />
+
+          {/* Legacy routes redirect to scanner */}
+          <Route path="/processing/:documentId" element={<Navigate to="/scanner" replace />} />
+          <Route path="/workbench/:documentId" element={<Navigate to="/scanner" replace />} />
+          <Route path="/risks/:documentId" element={<Navigate to="/scanner" replace />} />
+          <Route path="/audit/:documentId" element={<Navigate to="/scanner" replace />} />
+        </Routes>
+      </div>
     </div>
   );
 };

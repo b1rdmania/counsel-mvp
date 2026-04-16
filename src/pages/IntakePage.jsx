@@ -495,7 +495,7 @@ const IntakePage = () => {
                   activeOption,
                   postureMap[posture] || 'balanced'
                 );
-                navigate(`/processing/${doc.id}`);
+                navigate(`/scanner/processing/${doc.id}`);
               } catch (err) {
                 setUploading(false);
                 setUploadError(err.message || 'Upload failed. Please try again.');

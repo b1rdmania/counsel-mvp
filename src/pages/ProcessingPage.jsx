@@ -71,7 +71,7 @@ const ProcessingPage = () => {
         }
 
         if (doc.status === 'review_pending' || doc.status === 'completed') {
-          setTimeout(() => navigate(`/workbench/${documentId}`), 1200);
+          setTimeout(() => navigate(`/scanner/review/${documentId}`), 1200);
           return;
         }
       } catch (err) {

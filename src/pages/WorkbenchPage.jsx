@@ -125,7 +125,7 @@ const WorkbenchPage = () => {
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
-              onClick={() => navigate(`/risks/${documentId}`)}
+              onClick={() => navigate(`/scanner/risks/${documentId}`)}
               style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid #38383A', padding: '4px 10px', color: 'rgba(235, 235, 245, 0.6)', fontSize: 12, fontWeight: 500, borderRadius: 4, cursor: 'pointer' }}
             >
               View Risk Summary
