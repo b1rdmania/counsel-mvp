@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { DEMO_MODE } from '../config.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -196,15 +197,17 @@ const LitigationAdvisorPage = ({ matterId = null }) => {
           padding: '0 16px', borderBottom: '1px solid #38383A', flexShrink: 0,
         }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#EBEBF5' }}>Matters</span>
-          <button
-            onClick={startNewMatter}
-            style={{
-              backgroundColor: '#0A84FF', color: 'white', border: 'none', padding: '4px 12px',
-              borderRadius: '4px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', fontFamily,
-            }}
-          >
-            + New Matter
-          </button>
+          {!DEMO_MODE && (
+            <button
+              onClick={startNewMatter}
+              style={{
+                backgroundColor: '#0A84FF', color: 'white', border: 'none', padding: '4px 12px',
+                borderRadius: '4px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', fontFamily,
+              }}
+            >
+              + New Matter
+            </button>
+          )}
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>

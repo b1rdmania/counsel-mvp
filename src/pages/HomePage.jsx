@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NewMatterDialog } from '../App.jsx';
+import { DEMO_MODE } from '../config.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -166,18 +167,20 @@ const HomePage = () => {
           <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(235,235,245,0.6)', fontWeight: 600, margin: 0 }}>
             Your Matters
           </h2>
-          <button
-            onClick={() => setShowDialog(true)}
-            style={{
-              backgroundColor: '#0A84FF', color: 'white', border: 'none',
-              padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
-              cursor: 'pointer', fontFamily,
-              display: 'flex', alignItems: 'center', gap: '6px',
-            }}
-          >
-            <span style={{ fontSize: '14px', lineHeight: 1 }}>+</span>
-            <span>New Matter</span>
-          </button>
+          {!DEMO_MODE && (
+            <button
+              onClick={() => setShowDialog(true)}
+              style={{
+                backgroundColor: '#0A84FF', color: 'white', border: 'none',
+                padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
+                cursor: 'pointer', fontFamily,
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >
+              <span style={{ fontSize: '14px', lineHeight: 1 }}>+</span>
+              <span>New Matter</span>
+            </button>
+          )}
         </div>
 
         {/* Matters grid or empty state */}
@@ -191,21 +194,25 @@ const HomePage = () => {
               <polyline points="14 2 14 8 20 8" />
             </svg>
             <div style={{ fontSize: '16px', fontWeight: 600, color: '#EBEBF5', marginBottom: '8px' }}>
-              Create your first matter to get started
+              {DEMO_MODE ? 'No matters loaded yet' : 'Create your first matter to get started'}
             </div>
             <div style={{ fontSize: '13px', color: 'rgba(235,235,245,0.5)', marginBottom: '20px', maxWidth: '440px', margin: '0 auto 20px' }}>
-              A matter is the central unit of your work. Research, strategy, documents, timeline and letters all live inside it.
+              {DEMO_MODE
+                ? 'Demo matters should load automatically. If none appear, the backend may still be warming up.'
+                : 'A matter is the central unit of your work. Research, strategy, documents, timeline and letters all live inside it.'}
             </div>
-            <button
-              onClick={() => setShowDialog(true)}
-              style={{
-                backgroundColor: '#0A84FF', color: 'white', border: 'none',
-                padding: '10px 22px', borderRadius: '6px', fontSize: '13px', fontWeight: 600,
-                cursor: 'pointer', fontFamily,
-              }}
-            >
-              + New Matter
-            </button>
+            {!DEMO_MODE && (
+              <button
+                onClick={() => setShowDialog(true)}
+                style={{
+                  backgroundColor: '#0A84FF', color: 'white', border: 'none',
+                  padding: '10px 22px', borderRadius: '6px', fontSize: '13px', fontWeight: 600,
+                  cursor: 'pointer', fontFamily,
+                }}
+              >
+                + New Matter
+              </button>
+            )}
           </div>
         ) : (
           <div style={{

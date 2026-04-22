@@ -13,6 +13,7 @@ import TimelinePage from './pages/TimelinePage.jsx';
 import LetterDraftingPage from './pages/LetterDraftingPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import CaseWorkspacePage from './pages/CaseWorkspacePage.jsx';
+import { DEMO_MODE } from './config.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -294,21 +295,23 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* New Matter button */}
-      <div style={{ padding: '14px 16px 10px 16px', borderBottom: '1px solid #38383A' }}>
-        <button
-          onClick={() => setShowDialog(true)}
-          style={{
-            width: '100%', backgroundColor: '#0A84FF', color: 'white', border: 'none',
-            padding: '9px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
-            cursor: 'pointer', fontFamily,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-          }}
-        >
-          <span style={{ fontSize: '14px', lineHeight: 1 }}>+</span>
-          <span>New Matter</span>
-        </button>
-      </div>
+      {/* New Matter button — hidden in demo mode */}
+      {!DEMO_MODE && (
+        <div style={{ padding: '14px 16px 10px 16px', borderBottom: '1px solid #38383A' }}>
+          <button
+            onClick={() => setShowDialog(true)}
+            style={{
+              width: '100%', backgroundColor: '#0A84FF', color: 'white', border: 'none',
+              padding: '9px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
+              cursor: 'pointer', fontFamily,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+            }}
+          >
+            <span style={{ fontSize: '14px', lineHeight: 1 }}>+</span>
+            <span>New Matter</span>
+          </button>
+        </div>
+      )}
 
       {/* Matters list */}
       <div style={navSectionStyle}>
