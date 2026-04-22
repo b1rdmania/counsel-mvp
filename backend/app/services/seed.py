@@ -257,23 +257,29 @@ DEMO_LETTERS = [
 
 
 async def seed_demo_data():
-    """Seed the database with realistic demo matters if none exist."""
+    """Seed the database with realistic demo matters.
+
+    Additive: only inserts matters whose titles don't already exist in the DB.
+    Safe to run on every startup; won't duplicate existing seeded matters
+    or wipe user-created ones.
+    """
     db = await get_db()
 
-    # Check if we already have matters
-    rows = await db.execute_fetchall("SELECT COUNT(*) as c FROM matters")
-    count = dict(rows[0])["c"]
+    # Get existing matter titles so we can skip duplicates
+    existing_rows = await db.execute_fetchall("SELECT title FROM matters")
+    existing_titles = {dict(r)["title"] for r in existing_rows}
 
-    if count > 0:
-        print(f"[SEED] DB already has {count} matters, skipping seed")
+    to_seed = [m for m in DEMO_MATTERS if m["title"] not in existing_titles]
+    if not to_seed:
+        print(f"[SEED] All {len(DEMO_MATTERS)} demo matters already present, skipping")
         await db.close()
         return
 
-    print(f"[SEED] Seeding {len(DEMO_MATTERS)} demo matters...")
+    print(f"[SEED] Seeding {len(to_seed)} missing demo matters (of {len(DEMO_MATTERS)} total)...")
 
     now = datetime.now(timezone.utc)
 
-    for i, matter_data in enumerate(DEMO_MATTERS):
+    for i, matter_data in enumerate(to_seed):
         matter_id = str(uuid.uuid4())
         # Stagger created dates so "last activity" varies
         created = (now - timedelta(days=30 - i * 6)).isoformat()

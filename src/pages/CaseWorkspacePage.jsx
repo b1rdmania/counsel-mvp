@@ -4,7 +4,6 @@ import CaseLawPage from './CaseLawPage.jsx';
 import LitigationAdvisorPage from './LitigationAdvisorPage.jsx';
 import TimelinePage from './TimelinePage.jsx';
 import LetterDraftingPage from './LetterDraftingPage.jsx';
-import ContractScannerPage from './ContractScannerPage.jsx';
 import MatterAssistant from '../components/MatterAssistant.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -14,7 +13,6 @@ const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'research', label: 'Research' },
   { key: 'strategy', label: 'Strategy' },
-  { key: 'documents', label: 'Documents' },
   { key: 'timeline', label: 'Timeline' },
   { key: 'letters', label: 'Letters' },
 ];
@@ -234,8 +232,6 @@ const CaseWorkspacePage = () => {
         return <CaseLawPage matterId={matterId} />;
       case 'strategy':
         return <LitigationAdvisorPage matterId={matterId} />;
-      case 'documents':
-        return <ContractScannerPage matterId={matterId} />;
       case 'timeline':
         return <TimelinePage matterId={matterId} />;
       case 'letters':
@@ -277,9 +273,42 @@ const CaseWorkspacePage = () => {
               </div>
             )}
           </div>
-          <div style={{ textAlign: 'right', flexShrink: 0, fontSize: '11px', color: 'rgba(235,235,245,0.45)' }}>
-            {partiesSummary && <div style={{ marginBottom: '4px' }}>{partiesSummary}</div>}
-            {createdDate && <div>Created {createdDate}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
+            <button
+              onClick={() => navigate(`/scanner?matter=${matterId}`)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                backgroundColor: 'rgba(10, 132, 255, 0.1)',
+                border: '1px solid rgba(10, 132, 255, 0.3)',
+                color: '#0A84FF',
+                padding: '7px 14px',
+                borderRadius: '6px', fontSize: '12px', fontWeight: 600,
+                cursor: 'pointer', fontFamily,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(10, 132, 255, 0.18)';
+                e.currentTarget.style.borderColor = 'rgba(10, 132, 255, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(10, 132, 255, 0.1)';
+                e.currentTarget.style.borderColor = 'rgba(10, 132, 255, 0.3)';
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              Documents
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '2px', opacity: 0.7 }}>
+                <path d="M7 17L17 7" />
+                <polyline points="7 7 17 7 17 17" />
+              </svg>
+            </button>
+            <div style={{ textAlign: 'right', fontSize: '11px', color: 'rgba(235,235,245,0.45)' }}>
+              {partiesSummary && <div style={{ marginBottom: '4px' }}>{partiesSummary}</div>}
+              {createdDate && <div>Created {createdDate}</div>}
+            </div>
           </div>
         </div>
       </div>
