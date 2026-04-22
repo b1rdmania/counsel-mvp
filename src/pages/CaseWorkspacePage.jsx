@@ -210,7 +210,7 @@ const CaseWorkspacePage = () => {
             {error || 'Matter not found'}
           </div>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/workspace')}
             style={{
               marginTop: '12px', backgroundColor: '#0A84FF', color: 'white', border: 'none',
               padding: '8px 20px', borderRadius: '6px', fontSize: '12px', fontWeight: 600,

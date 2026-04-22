@@ -13,6 +13,7 @@ import TimelinePage from './pages/TimelinePage.jsx';
 import LetterDraftingPage from './pages/LetterDraftingPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import CaseWorkspacePage from './pages/CaseWorkspacePage.jsx';
+import SplashPage from './pages/SplashPage.jsx';
 import { DEMO_MODE } from './config.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -289,7 +290,7 @@ const Sidebar = () => {
       <div style={brandingStyle}>
         <div
           style={{ fontWeight: 700, letterSpacing: '-0.5px', color: '#EBEBF5', fontSize: '15px', cursor: 'pointer' }}
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/workspace')}
         >
           BIRD <span style={{ color: 'rgba(235, 235, 245, 0.6)', fontWeight: 500 }}>LEGAL</span>
         </div>
@@ -418,50 +419,59 @@ const Sidebar = () => {
   );
 };
 
+// Wrapper for routes that use the app chrome (sidebar + main content area).
+const AppShell = ({ children }) => (
+  <div style={bodyStyle}>
+    <Sidebar />
+    <div style={mainContentStyle}>
+      {children}
+    </div>
+  </div>
+);
+
 const App = () => {
   return (
-    <div style={bodyStyle}>
-      <Sidebar />
-      <div style={mainContentStyle}>
-        <Routes>
-          {/* Home dashboard */}
-          <Route path="/" element={<HomePage />} />
+    <Routes>
+      {/* Splash page — no sidebar, own layout */}
+      <Route path="/" element={<SplashPage />} />
 
-          {/* Case workspace (matter-centric) */}
-          <Route path="/case/:matterId" element={<CaseWorkspacePage />} />
-          <Route path="/case/:matterId/overview" element={<CaseWorkspacePage />} />
-          <Route path="/case/:matterId/research" element={<CaseWorkspacePage />} />
-          <Route path="/case/:matterId/strategy" element={<CaseWorkspacePage />} />
-          <Route path="/case/:matterId/documents" element={<CaseWorkspacePage />} />
-          <Route path="/case/:matterId/timeline" element={<CaseWorkspacePage />} />
-          <Route path="/case/:matterId/letters" element={<CaseWorkspacePage />} />
+      {/* Everything below uses the app shell */}
+      <Route path="/workspace" element={<AppShell><HomePage /></AppShell>} />
 
-          {/* Global Library (case law research, no matter context) */}
-          <Route path="/library" element={<CaseLawPage />} />
+      {/* Case workspace (matter-centric) */}
+      <Route path="/case/:matterId" element={<AppShell><CaseWorkspacePage /></AppShell>} />
+      <Route path="/case/:matterId/overview" element={<AppShell><CaseWorkspacePage /></AppShell>} />
+      <Route path="/case/:matterId/research" element={<AppShell><CaseWorkspacePage /></AppShell>} />
+      <Route path="/case/:matterId/strategy" element={<AppShell><CaseWorkspacePage /></AppShell>} />
+      <Route path="/case/:matterId/documents" element={<AppShell><CaseWorkspacePage /></AppShell>} />
+      <Route path="/case/:matterId/timeline" element={<AppShell><CaseWorkspacePage /></AppShell>} />
+      <Route path="/case/:matterId/letters" element={<AppShell><CaseWorkspacePage /></AppShell>} />
 
-          {/* Settings */}
-          <Route path="/settings" element={<SettingsPage />} />
+      {/* Global Library (case law research, no matter context) */}
+      <Route path="/library" element={<AppShell><CaseLawPage /></AppShell>} />
 
-          {/* Legacy global module routes (still work as "global" mode) */}
-          <Route path="/research" element={<CaseLawPage />} />
-          <Route path="/advisor" element={<LitigationAdvisorPage />} />
-          <Route path="/timeline" element={<TimelinePage />} />
-          <Route path="/drafting" element={<LetterDraftingPage />} />
-          <Route path="/scanner" element={<ContractScannerPage />} />
-          <Route path="/scanner/upload" element={<ContractScannerPage />} />
-          <Route path="/scanner/processing/:documentId" element={<ContractScannerPage />} />
-          <Route path="/scanner/review/:documentId" element={<ContractScannerPage />} />
-          <Route path="/scanner/risks/:documentId" element={<ContractScannerPage />} />
-          <Route path="/scanner/audit/:documentId" element={<ContractScannerPage />} />
+      {/* Settings */}
+      <Route path="/settings" element={<AppShell><SettingsPage /></AppShell>} />
 
-          {/* Legacy redirects */}
-          <Route path="/processing/:documentId" element={<Navigate to="/scanner" replace />} />
-          <Route path="/workbench/:documentId" element={<Navigate to="/scanner" replace />} />
-          <Route path="/risks/:documentId" element={<Navigate to="/scanner" replace />} />
-          <Route path="/audit/:documentId" element={<Navigate to="/scanner" replace />} />
-        </Routes>
-      </div>
-    </div>
+      {/* Legacy global module routes (still work as "global" mode) */}
+      <Route path="/research" element={<AppShell><CaseLawPage /></AppShell>} />
+      <Route path="/advisor" element={<AppShell><LitigationAdvisorPage /></AppShell>} />
+      <Route path="/timeline" element={<AppShell><TimelinePage /></AppShell>} />
+      <Route path="/drafting" element={<AppShell><LetterDraftingPage /></AppShell>} />
+      <Route path="/scanner" element={<AppShell><ContractScannerPage /></AppShell>} />
+      <Route path="/scanner/upload" element={<AppShell><ContractScannerPage /></AppShell>} />
+      <Route path="/scanner/processing/:documentId" element={<AppShell><ContractScannerPage /></AppShell>} />
+      <Route path="/scanner/review/:documentId" element={<AppShell><ContractScannerPage /></AppShell>} />
+      <Route path="/scanner/risks/:documentId" element={<AppShell><ContractScannerPage /></AppShell>} />
+      <Route path="/scanner/audit/:documentId" element={<AppShell><ContractScannerPage /></AppShell>} />
+
+      {/* Legacy redirects */}
+      <Route path="/home" element={<Navigate to="/workspace" replace />} />
+      <Route path="/processing/:documentId" element={<Navigate to="/scanner" replace />} />
+      <Route path="/workbench/:documentId" element={<Navigate to="/scanner" replace />} />
+      <Route path="/risks/:documentId" element={<Navigate to="/scanner" replace />} />
+      <Route path="/audit/:documentId" element={<Navigate to="/scanner" replace />} />
+    </Routes>
   );
 };
 

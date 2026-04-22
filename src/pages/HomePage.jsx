@@ -47,11 +47,12 @@ const HomePage = () => {
   const countFor = (list, matterId, key = 'matter_id') =>
     list.filter(x => x && x[key] === matterId).length;
 
-  const tools = [
+  const modules = [
     {
-      key: 'library',
-      title: 'Case Law Library',
-      description: 'Search English & Welsh case law — no matter context required.',
+      key: 'research',
+      title: 'Case Law Research',
+      description: 'Search 4,700+ English & Welsh judgments from the National Archives. AI summarises ratio decidendi and distinguishes authorities.',
+      painPoint: 'Westlaw UX from 2003, solved.',
       path: '/library',
       accent: '#0A84FF',
       icon: (color) => (
@@ -64,7 +65,8 @@ const HomePage = () => {
     {
       key: 'advisor',
       title: 'Litigation Advisor',
-      description: 'Full matter list with SWOT & game theory (global view).',
+      description: 'Structure a matter. Run Nash-equilibrium settlement analysis. Chat to an advisor that sees your whole case.',
+      painPoint: 'Game theory for settlement strategy. Nobody else ships this.',
       path: '/advisor',
       accent: '#BF5AF2',
       icon: (color) => (
@@ -78,7 +80,8 @@ const HomePage = () => {
     {
       key: 'timeline',
       title: 'Timeline Builder',
-      description: 'Extract dates from any document — not tied to a matter.',
+      description: 'Upload disclosure bundles. AI extracts every date, ranks them by significance, and builds the chronology.',
+      painPoint: 'Half a day of paralegal work in 90 seconds.',
       path: '/timeline',
       accent: '#32D74B',
       icon: (color) => (
@@ -91,7 +94,8 @@ const HomePage = () => {
     {
       key: 'drafting',
       title: 'Letter Drafting',
-      description: 'One-off letters — LBA, Part 36, Without Prejudice.',
+      description: 'Letter Before Action. Part 36 Offer. Without Prejudice. Response to Claim. Pre-filled from matter. CPR-compliant.',
+      painPoint: 'You bill for letters. Now write them faster.',
       path: '/drafting',
       accent: '#FF9F0A',
       icon: (color) => (
@@ -103,9 +107,10 @@ const HomePage = () => {
     {
       key: 'scanner',
       title: 'Contract Scanner',
-      description: 'Standalone NDA / MSA review without a matter.',
+      description: 'Drop an NDA, MSA, or acquisition agreement. Four-agent pipeline parses, analyses, redlines, summarises.',
+      painPoint: 'NDA triage in 90 seconds. Full diligence in under 10 minutes.',
       path: '/scanner',
-      accent: 'rgba(235, 235, 245, 0.6)',
+      accent: 'rgba(235, 235, 245, 0.72)',
       icon: (color) => (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -121,52 +126,80 @@ const HomePage = () => {
     <div style={{ flex: 1, overflow: 'auto', backgroundColor: '#1C1C1E' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 40px' }}>
         {/* Welcome Header */}
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '40px' }}>
           <div style={{
             fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.2px',
             color: 'rgba(235, 235, 245, 0.4)', fontWeight: 600, marginBottom: '8px',
           }}>
             Welcome to Bird Legal
           </div>
-          <h1 style={{ fontSize: '28px', fontWeight: 600, color: '#EBEBF5', marginBottom: '8px', letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 600, color: '#EBEBF5', marginBottom: '10px', letterSpacing: '-0.5px' }}>
             Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, Counsel.
           </h1>
-          <p style={{ fontSize: '15px', color: 'rgba(235, 235, 245, 0.6)', lineHeight: 1.6, maxWidth: '640px' }}>
-            Your matters, organised. Each matter is a workspace with research, strategy, documents, timeline and letters in one place.
+          <p style={{ fontSize: '15px', color: 'rgba(235, 235, 245, 0.65)', lineHeight: 1.6, maxWidth: '720px' }}>
+            The matter-first legal AI workspace. Five modules wired into every case — research, strategy, timeline, letters, documents — with a persistent assistant that knows the whole file.
           </p>
         </div>
 
-        {/* Stats Row */}
+        {/* MODULES — lead with what it does */}
+        <div style={{ marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(235,235,245,0.7)', fontWeight: 600, marginBottom: '4px' }}>
+            Modules
+          </h2>
+          <div style={{ fontSize: '12px', color: 'rgba(235,235,245,0.45)', marginBottom: '16px' }}>
+            Each module works standalone or inside a matter. Inside a matter, they share context.
+          </div>
+        </div>
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '40px',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: '12px', marginBottom: '48px',
         }}>
-          {[
-            { label: 'Active Matters', value: stats.matters, accent: '#BF5AF2' },
-            { label: 'Letters Drafted', value: stats.letters, accent: '#FF9F0A' },
-            { label: 'Timeline Events', value: stats.events, accent: '#32D74B' },
-            { label: 'Documents', value: stats.documents, accent: 'rgba(235,235,245,0.4)' },
-          ].map((s) => (
-            <div key={s.label} style={{
-              backgroundColor: '#262628', border: '1px solid #38383A',
-              borderRadius: '8px', padding: '16px 20px',
-            }}>
-              <div style={{ fontSize: '11px', color: 'rgba(235,235,245,0.4)', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: 600, marginBottom: '4px' }}>
-                {s.label}
+          {modules.map((m) => {
+            const isHovered = hoveredTool === m.key;
+            return (
+              <div
+                key={m.key}
+                onClick={() => navigate(m.path)}
+                onMouseEnter={() => setHoveredTool(m.key)}
+                onMouseLeave={() => setHoveredTool(null)}
+                style={{
+                  backgroundColor: '#262628',
+                  border: `1px solid ${isHovered ? m.accent : '#38383A'}`,
+                  borderRadius: '10px', padding: '18px 20px', cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  display: 'flex', flexDirection: 'column', gap: '8px',
+                  transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2px' }}>
+                  {m.icon(m.accent)}
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#EBEBF5' }}>
+                    {m.title}
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: 'rgba(235,235,245,0.6)', lineHeight: 1.55 }}>
+                  {m.description}
+                </div>
+                <div style={{ fontSize: '11px', color: m.accent, fontStyle: 'italic', marginTop: '2px' }}>
+                  {m.painPoint}
+                </div>
               </div>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: s.accent }}>
-                {s.value}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Matters section header */}
+        {/* Demo matters section header */}
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px',
         }}>
-          <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(235,235,245,0.6)', fontWeight: 600, margin: 0 }}>
-            Your Matters
-          </h2>
+          <div>
+            <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(235,235,245,0.7)', fontWeight: 600, margin: 0, marginBottom: '4px' }}>
+              Demo Matters
+            </h2>
+            <div style={{ fontSize: '12px', color: 'rgba(235,235,245,0.45)', maxWidth: '560px', lineHeight: 1.55 }}>
+              Four real cases wired end to end to prove the workflow. Parties, issues, timeline events and strategy analysis pre-loaded. Click any matter to enter its workspace.
+            </div>
+          </div>
           {!DEMO_MODE && (
             <button
               onClick={() => setShowDialog(true)}
@@ -301,56 +334,39 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* Global Tools */}
-        <div style={{ marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', color: 'rgba(235,235,245,0.6)', fontWeight: 600, marginBottom: '6px' }}>
-            Global Tools
-          </h2>
-          <div style={{ fontSize: '12px', color: 'rgba(235,235,245,0.4)', marginBottom: '16px' }}>
-            For work that isn't tied to a specific matter.
-          </div>
-        </div>
-
+        {/* Compact workspace stats */}
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '12px', marginBottom: '40px',
+          marginTop: '40px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px',
         }}>
-          {tools.map((t) => {
-            const isHovered = hoveredTool === t.key;
-            return (
-              <div
-                key={t.key}
-                onClick={() => navigate(t.path)}
-                onMouseEnter={() => setHoveredTool(t.key)}
-                onMouseLeave={() => setHoveredTool(null)}
-                style={{
-                  backgroundColor: '#262628',
-                  border: `1px solid ${isHovered ? t.accent : '#38383A'}`,
-                  borderRadius: '8px', padding: '16px', cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'flex', flexDirection: 'column', gap: '8px',
-                }}
-              >
-                <div>{t.icon(t.accent)}</div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#EBEBF5' }}>
-                  {t.title}
-                </div>
-                <div style={{ fontSize: '11px', color: 'rgba(235,235,245,0.5)', lineHeight: 1.4 }}>
-                  {t.description}
-                </div>
+          {[
+            { label: 'Active Matters', value: stats.matters, accent: '#BF5AF2' },
+            { label: 'Letters Drafted', value: stats.letters, accent: '#FF9F0A' },
+            { label: 'Timeline Events', value: stats.events, accent: '#32D74B' },
+            { label: 'Saved Cases', value: stats.documents, accent: '#0A84FF' },
+          ].map((s) => (
+            <div key={s.label} style={{
+              backgroundColor: 'rgba(38, 38, 40, 0.5)', border: '1px solid #38383A',
+              borderRadius: '8px', padding: '12px 16px',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div style={{ fontSize: '11px', color: 'rgba(235,235,245,0.55)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 500 }}>
+                {s.label}
               </div>
-            );
-          })}
+              <div style={{ fontSize: '18px', fontWeight: 600, color: s.accent }}>
+                {s.value}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Footer */}
         <div style={{
-          borderTop: '1px solid #38383A', paddingTop: '20px', marginTop: '32px',
+          borderTop: '1px solid #38383A', paddingTop: '20px', marginTop: '40px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           fontSize: '11px', color: 'rgba(235,235,245,0.3)',
         }}>
-          <div>Bird Legal · Private AI for law firms</div>
-          <div>v0.3 · Matter-centric</div>
+          <div>Bird Legal · Matter-first legal AI for English firms</div>
+          <div>v0.3 · Local-model capable · UK law</div>
         </div>
       </div>
 
