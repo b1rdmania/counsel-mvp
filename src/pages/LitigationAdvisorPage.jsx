@@ -112,21 +112,35 @@ const LitigationAdvisorPage = ({ matterId = null }) => {
 
   const handleAnalyze = async () => {
     if (!editingMatter) return;
+
+    // Matter must exist in DB to analyze — a "new-*" local id means it hasn't been saved yet
+    if (!editingMatter.id || String(editingMatter.id).startsWith('new-')) {
+      setChatMessages(prev => [...prev, {
+        role: 'system',
+        text: 'Please save the matter before running strategy analysis.',
+      }]);
+      return;
+    }
+
     setAnalyzing(true);
     try {
       const res = await fetch(`${API_BASE}/api/advisor/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingMatter),
+        body: JSON.stringify({ matter_id: editingMatter.id }),
       });
-      if (!res.ok) throw new Error('Analysis failed');
+      if (!res.ok) {
+        const errText = await res.text().catch(() => 'Analysis failed');
+        throw new Error(errText || `Analysis failed (${res.status})`);
+      }
       const data = await res.json();
+      const analysis = data.analysis || {};
       setEditingMatter(prev => ({
         ...prev,
-        strengths: data.strengths || prev.strengths,
-        weaknesses: data.weaknesses || prev.weaknesses,
-        opportunities: data.opportunities || prev.opportunities,
-        gameTheory: data.game_theory || prev.gameTheory,
+        strengths: analysis.strengths || prev.strengths,
+        weaknesses: analysis.weaknesses || prev.weaknesses,
+        opportunities: analysis.opportunities || prev.opportunities,
+        gameTheory: analysis.nash_equilibrium || analysis.game_theory || prev.gameTheory,
       }));
     } catch (err) {
       setChatMessages(prev => [...prev, { role: 'system', text: `Analysis error: ${err.message}` }]);
