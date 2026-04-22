@@ -279,14 +279,29 @@ const LitigationAdvisorPage = ({ matterId = null }) => {
               <button
                 onClick={handleAnalyze}
                 disabled={analyzing}
+                title={analyzing ? 'Running strategy analysis — 30-60s for a fresh run, instant if cached' : 'Run strategy analysis'}
                 style={{
                   backgroundColor: analyzing ? '#48484A' : '#0A84FF', color: 'white', border: 'none',
                   padding: '8px 20px', borderRadius: '6px', fontSize: '13px', fontWeight: 600,
                   cursor: analyzing ? 'not-allowed' : 'pointer', fontFamily,
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
                 }}
               >
-                {analyzing ? 'Analyzing...' : 'Analyze Strategy'}
+                {analyzing && (
+                  <span style={{
+                    display: 'inline-block', width: '10px', height: '10px',
+                    borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: 'white',
+                    animation: 'spin 0.8s linear infinite',
+                  }} />
+                )}
+                {analyzing ? 'Analysing…' : 'Analyse Strategy'}
               </button>
+              {analyzing && (
+                <div style={{ fontSize: '11px', color: 'rgba(235,235,245,0.45)', marginLeft: '12px' }}>
+                  Fresh run takes 30–60s. Cached results return instantly.
+                </div>
+              )}
             </div>
 
             {/* Case Summary */}

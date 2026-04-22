@@ -32,6 +32,7 @@ class MatterUpdate(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     matter_id: str
+    force: bool = False  # set true to re-run analysis even if cached result exists
 
 class ChatMessage(BaseModel):
     matter_id: str
@@ -320,7 +321,12 @@ async def update_matter(matter_id: str, body: MatterUpdate):
 
 @router.post("/analyze")
 async def analyze_strategy(body: AnalyzeRequest):
-    """Run full AI strategy analysis including Nash equilibrium."""
+    """Run full AI strategy analysis including Nash equilibrium.
+
+    Fast-path: if the matter already has a cached analysis (strengths/weaknesses/
+    opportunities + nash_equilibrium or game_theory), return it instantly.
+    Pass force=true to force a fresh run.
+    """
     db = await get_db()
     rows = await db.execute_fetchall("SELECT * FROM matters WHERE id = ?", (body.matter_id,))
     if not rows:
@@ -329,6 +335,27 @@ async def analyze_strategy(body: AnalyzeRequest):
 
     matter = dict(rows[0])
     await db.close()
+
+    # Fast-path: if we already have a full cached analysis, return it (unless force=true)
+    if not body.force:
+        try:
+            existing_analysis = json.loads(matter.get("analysis_json", "{}"))
+        except json.JSONDecodeError:
+            existing_analysis = {}
+        has_game_theory = bool(existing_analysis.get("nash_equilibrium") or existing_analysis.get("game_theory"))
+        existing_strengths = json.loads(matter.get("strengths_json", "[]"))
+        existing_weaknesses = json.loads(matter.get("weaknesses_json", "[]"))
+        existing_opportunities = json.loads(matter.get("opportunities_json", "[]"))
+        if has_game_theory and existing_strengths and existing_weaknesses:
+            # Merge the SWO arrays back into the analysis shape the frontend expects
+            cached = {
+                **existing_analysis,
+                "strengths": existing_strengths,
+                "weaknesses": existing_weaknesses,
+                "opportunities": existing_opportunities,
+                "_cached": True,
+            }
+            return {"matter_id": body.matter_id, "analysis": cached}
 
     agent = StrategyAnalyst()
     result = await agent.execute(

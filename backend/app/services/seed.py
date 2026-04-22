@@ -284,11 +284,40 @@ async def seed_demo_data():
         # Stagger created dates so "last activity" varies
         created = (now - timedelta(days=30 - i * 6)).isoformat()
 
+        # Build a cached analysis structure so the "Analyse Strategy" button
+        # returns instantly via the fast-path (rather than running Claude fresh).
         analysis = {}
-        if matter_data.get("game_theory"):
-            analysis["game_theory"] = matter_data["game_theory"]
+        gt = matter_data.get("game_theory")
+        if gt:
+            # Store under both keys so both legacy and current frontend code find it
+            analysis["nash_equilibrium"] = gt
+            analysis["game_theory"] = gt
         if matter_data.get("risk_assessment"):
             analysis["risk_assessment"] = matter_data["risk_assessment"]
+        # Also embed the SWO arrays inside the analysis so the fast-path payload
+        # is complete on its own.
+        if matter_data.get("strengths"):
+            analysis["strengths"] = matter_data["strengths"]
+        if matter_data.get("weaknesses"):
+            analysis["weaknesses"] = matter_data["weaknesses"]
+        if matter_data.get("opportunities"):
+            analysis["opportunities"] = matter_data["opportunities"]
+        # Add a realistic recommended strategy and case list so the full response
+        # shape matches what Claude would return.
+        if gt:
+            analysis["recommended_strategy"] = (
+                "Apply coordinated pressure across injunctive relief, cost escalation, "
+                "and reputational exposure. Force the counterparty into the Nash "
+                "equilibrium band by demonstrating credible commitment to trial while "
+                "leaving a commercially acceptable settlement path open. Timing is "
+                "decisive — act before the cost curve steepens and before any pleadings "
+                "crystallise adverse positions."
+            )
+            analysis["key_cases_to_research"] = [
+                "Yam Seng Pte Ltd v International Trade Corporation Ltd [2013] EWHC 111 (QB) — implied duty of good faith",
+                "Al Nehayan v Kent [2018] EWHC 333 (Comm) — relational contracts and good faith",
+                "BNP Paribas SA v Trattamento Rifiuti Metropolitani SpA [2019] EWCA Civ 768 — waiver",
+            ]
 
         await db.execute(
             """INSERT INTO matters (id, title, summary, parties_json, issues_json,
