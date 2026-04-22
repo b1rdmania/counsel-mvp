@@ -130,13 +130,13 @@ const SplashPage = () => {
       {/* HERO */}
       <section style={{ ...section('transparent', 'clamp(80px, 12vh, 140px) 40px') }}>
         <div style={inner}>
-          <div style={eyebrow}>AI for English law firms</div>
+          <div style={eyebrow}>AI for UK law firms</div>
           <h1 style={h1}>
             Legal AI that doesn't<br />
             leave your office.
           </h1>
           <p style={{ ...sub, marginBottom: '40px' }}>
-            Built for boutique English firms. Runs on your own models. Lives inside your matters — not in someone else's chat window.
+            Runs on your own models. Lives inside your office — not on servers in San Francisco.
           </p>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button
@@ -167,7 +167,7 @@ const SplashPage = () => {
               'Privilege-preserving architecture',
               'Local-model capable',
               'Full audit trail',
-              'Built on English law',
+              'Built on UK law',
             ].map(t => (
               <div key={t} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#32D74B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -210,7 +210,7 @@ const SplashPage = () => {
               subtitle="Built for Davis Polk. Priced accordingly."
               points={[
                 'Harvey: average contract value reportedly above £200K per year.',
-                'Workflows designed around US BigLaw, not English commercial practice.',
+                'Workflows designed around US BigLaw, not UK commercial practice.',
                 'Your client data still traverses their cloud, not your infrastructure.',
               ]}
               accent="#FF9F0A"
@@ -222,7 +222,7 @@ const SplashPage = () => {
               points={[
                 'Self-hostable on Gemma 3, Llama, or Hermes — zero third-party data egress.',
                 'Every AI call logged with input/output hashes. SOC 2 roadmap in place.',
-                'Priced for boutique firms. Configured for English law by default.',
+                'Priced for independent firms. Configured for UK law by default.',
               ]}
               accent="#32D74B"
               featured
@@ -265,12 +265,12 @@ const SplashPage = () => {
             />
             <Pillar
               number="03"
-              title="English law as default — not an afterthought."
+              title="UK law as default — not an afterthought."
               body={
                 <>
-                  Live integration with The National Archives' Find Case Law API gives you 4,700+ English and Welsh judgments with proper neutral citations. Letter templates are CPR-compliant by construction — Part 36 offers strictly follow CPR 36.5. Dates render as DD Month YYYY. Spelling is proper English.
+                  Live integration with The National Archives' Find Case Law API gives you 4,700+ UK judgments with proper neutral citations. Letter templates are CPR-compliant by construction — Part 36 offers strictly follow CPR 36.5. Dates render as DD Month YYYY. Spelling is UK English, not American.
                   <br /><br />
-                  Currently scoped to England & Wales. Jurisdiction packs for Scotland, Ireland, Singapore, Hong Kong, and the EU are straightforward to add — the architecture separates jurisdiction from engine.
+                  Currently scoped to England & Wales with Supreme Court coverage. Jurisdiction packs for Scotland, Northern Ireland, Ireland, Singapore, Hong Kong, and the EU are straightforward to add — the architecture separates jurisdiction from engine.
                 </>
               }
             />
@@ -294,7 +294,7 @@ const SplashPage = () => {
             <ModuleCard
               name="Case Law Research"
               accent="#0A84FF"
-              oneLine="Search 4,700+ English judgments. AI ratio decidendi, distinguishing analysis, saved to your matter."
+              oneLine="Search 4,700+ UK judgments. AI ratio decidendi, distinguishing analysis, saved to your matter."
               painPoint="Westlaw has not had its UX updated since 2003."
             />
             <ModuleCard

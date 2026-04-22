@@ -51,7 +51,7 @@ const HomePage = () => {
     {
       key: 'research',
       title: 'Case Law Research',
-      description: 'Search 4,700+ English & Welsh judgments from the National Archives. AI summarises ratio decidendi and distinguishes authorities.',
+      description: 'Search 4,700+ UK judgments from the National Archives. AI summarises ratio decidendi and distinguishes authorities.',
       painPoint: 'Westlaw UX from 2003, solved.',
       path: '/library',
       accent: '#0A84FF',
@@ -365,7 +365,7 @@ const HomePage = () => {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           fontSize: '11px', color: 'rgba(235,235,245,0.3)',
         }}>
-          <div>Bird Legal · Matter-first legal AI for English firms</div>
+          <div>Bird Legal · Matter-first legal AI for UK firms</div>
           <div>v0.3 · Local-model capable · UK law</div>
         </div>
       </div>
