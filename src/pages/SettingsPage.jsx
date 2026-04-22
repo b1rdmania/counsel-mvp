@@ -286,7 +286,7 @@ const Notifications = () => {
           {[
             { label: 'Email Alerts (Critical)', desc: 'Send immediate email notifications for high-severity risk flags.', state: emailAlerts, toggle: () => setEmailAlerts(!emailAlerts) },
             { label: 'Digest Emails', desc: 'Daily summary of medium-severity flags and document activity.', state: digestEmails, toggle: () => setDigestEmails(!digestEmails) },
-            { label: 'In-App Notifications', desc: 'Show banner alerts within the Stella Counsel workspace.', state: inAppAlerts, toggle: () => setInAppAlerts(!inAppAlerts) },
+            { label: 'In-App Notifications', desc: 'Show banner alerts within the Bird Legal workspace.', state: inAppAlerts, toggle: () => setInAppAlerts(!inAppAlerts) },
             { label: 'Slack Integration', desc: 'Post critical flags to a designated Slack channel.', state: slackIntegration, toggle: () => setSlackIntegration(!slackIntegration) },
           ].map((item) => (
             <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '40px' }}>

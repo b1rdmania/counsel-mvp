@@ -438,7 +438,7 @@ const LitigationAdvisorPage = () => {
                   }}
                 >
                   <div style={{ fontSize: '10px', color: msg.role === 'user' ? '#0A84FF' : msg.role === 'system' ? '#FF453A' : 'rgba(235,235,245,0.4)', fontWeight: 600, marginBottom: '4px' }}>
-                    {msg.role === 'user' ? 'You' : msg.role === 'system' ? 'System' : 'Stella Counsel'}
+                    {msg.role === 'user' ? 'You' : msg.role === 'system' ? 'System' : 'Bird Legal'}
                   </div>
                   <div style={{ fontSize: '12px', color: 'rgba(235,235,245,0.7)', lineHeight: 1.5 }}>
                     {msg.text}

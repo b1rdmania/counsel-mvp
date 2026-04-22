@@ -26,7 +26,7 @@ const WorkbenchPage = () => {
         // Generate AI comment from the first redline's explanation
         const first = doc.redlines[0];
         setComments([{
-          id: 1, isAI: true, name: 'Stella Counsel', timestamp: 'Just now',
+          id: 1, isAI: true, name: 'Bird Legal', timestamp: 'Just now',
           badge: 'INSIGHT', text: first.explanation, borderLeft: true,
         }]);
       }
@@ -86,7 +86,7 @@ const WorkbenchPage = () => {
       if (currentIndex < redlines.length - 1) {
         setCurrentIndex(i => i + 1);
         const next = redlines[currentIndex + 1];
-        if (next) setComments([{ id: Date.now(), isAI: true, name: 'Stella Counsel', timestamp: 'Just now', badge: 'INSIGHT', text: next.explanation, borderLeft: true }]);
+        if (next) setComments([{ id: Date.now(), isAI: true, name: 'Bird Legal', timestamp: 'Just now', badge: 'INSIGHT', text: next.explanation, borderLeft: true }]);
       }
     }, 1000);
   };
@@ -101,7 +101,7 @@ const WorkbenchPage = () => {
       if (currentIndex < redlines.length - 1) {
         setCurrentIndex(i => i + 1);
         const next = redlines[currentIndex + 1];
-        if (next) setComments([{ id: Date.now(), isAI: true, name: 'Stella Counsel', timestamp: 'Just now', badge: 'INSIGHT', text: next.explanation, borderLeft: true }]);
+        if (next) setComments([{ id: Date.now(), isAI: true, name: 'Bird Legal', timestamp: 'Just now', badge: 'INSIGHT', text: next.explanation, borderLeft: true }]);
       }
     }, 1000);
   };

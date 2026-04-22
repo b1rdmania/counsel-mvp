@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Stella Counsel API",
+    title="Bird Legal API",
     version="0.2.0",
     lifespan=lifespan,
 )

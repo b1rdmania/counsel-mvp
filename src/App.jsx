@@ -163,7 +163,7 @@ const Sidebar = () => {
           style={{ fontWeight: 700, letterSpacing: '-0.5px', color: '#EBEBF5', fontSize: '15px', cursor: 'pointer' }}
           onClick={() => navigate('/scanner')}
         >
-          STELLA <span style={{ color: 'rgba(235, 235, 245, 0.6)', fontWeight: 500 }}>COUNSEL</span>
+          BIRD <span style={{ color: 'rgba(235, 235, 245, 0.6)', fontWeight: 500 }}>LEGAL</span>
         </div>
       </div>
 
