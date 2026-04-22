@@ -419,15 +419,85 @@ const Sidebar = () => {
   );
 };
 
-// Wrapper for routes that use the app chrome (sidebar + main content area).
-const AppShell = ({ children }) => (
-  <div style={bodyStyle}>
-    <Sidebar />
-    <div style={mainContentStyle}>
-      {children}
+// Mobile notice — shown on app routes when the viewport is too small for the
+// desktop-first workspace UI. Splash page remains accessible on mobile.
+const MobileNotice = () => {
+  const navigate = useNavigate();
+  return (
+    <div style={{
+      minHeight: '100vh', width: '100vw',
+      backgroundColor: '#1C1C1E', color: '#EBEBF5',
+      fontFamily, WebkitFontSmoothing: 'antialiased',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '40px 28px', textAlign: 'center',
+    }}>
+      <div style={{
+        fontWeight: 700, letterSpacing: '-0.5px', color: '#EBEBF5', fontSize: '15px',
+        marginBottom: '40px',
+      }}>
+        BIRD <span style={{ color: 'rgba(235, 235, 245, 0.6)', fontWeight: 500 }}>LEGAL</span>
+      </div>
+
+      <div style={{
+        fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px',
+        color: 'rgba(235, 235, 245, 0.4)', fontWeight: 600, marginBottom: '16px',
+      }}>
+        Demo designed for laptop or desktop
+      </div>
+      <h1 style={{
+        fontFamily: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+        fontSize: '32px', fontWeight: 500, lineHeight: 1.2,
+        letterSpacing: '-0.5px', color: '#EBEBF5', marginBottom: '20px',
+        maxWidth: '420px',
+      }}>
+        Open this on a bigger screen.
+      </h1>
+      <p style={{
+        fontSize: '14px', color: 'rgba(235, 235, 245, 0.65)', lineHeight: 1.6,
+        maxWidth: '380px', marginBottom: '32px',
+      }}>
+        The Bird Legal workspace is built for the density and multi-panel layout a solicitor actually works in — sidebar of matters, tabbed modules, and a persistent AI assistant. That doesn't fit on a phone yet.
+        <br /><br />
+        Send yourself this link, or re-open on a laptop or iPad in landscape.
+      </p>
+      <button
+        onClick={() => navigate('/')}
+        style={{
+          backgroundColor: '#0A84FF', color: 'white', border: 'none',
+          padding: '12px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+          cursor: 'pointer', fontFamily,
+        }}
+      >
+        Back to overview
+      </button>
     </div>
-  </div>
-);
+  );
+};
+
+// Wrapper for routes that use the app chrome (sidebar + main content area).
+// On narrow viewports (< 900px), show the mobile notice instead.
+const AppShell = ({ children }) => {
+  const [isMobile, setIsMobile] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth < 900 : false
+  );
+
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  if (isMobile) return <MobileNotice />;
+
+  return (
+    <div style={bodyStyle}>
+      <Sidebar />
+      <div style={mainContentStyle}>
+        {children}
+      </div>
+    </div>
+  );
+};
 
 const App = () => {
   return (

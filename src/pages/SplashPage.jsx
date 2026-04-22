@@ -152,7 +152,7 @@ const SplashPage = () => {
               </svg>
             </button>
             <div style={{ fontSize: '12px', color: 'rgba(235, 235, 245, 0.4)', marginLeft: '8px' }}>
-              No sign-up. Four pre-loaded matters.
+              No sign-up · Four pre-loaded matters · Designed for laptop
             </div>
           </div>
         </div>
