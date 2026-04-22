@@ -8,11 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import FRONTEND_URL
 from .database import init_db
 from .routers import documents, research, advisor, timeline, drafting
+from .services.seed import seed_demo_data
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await seed_demo_data()
     yield
 
 
