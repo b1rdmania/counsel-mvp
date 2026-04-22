@@ -7,7 +7,7 @@ const fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI"
 const courtLevels = ['Supreme Court', 'Court of Appeal', 'High Court', 'Crown Court'];
 const areasOfLaw = ['Contract', 'Tort', 'Property', 'Criminal', 'Employment', 'Family', 'Administrative', 'Company'];
 
-const CaseLawPage = () => {
+const CaseLawPage = ({ matterId = null }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,6 +47,7 @@ const CaseLawPage = () => {
       if (dateFrom) params.append('date_from', dateFrom);
       if (dateTo) params.append('date_to', dateTo);
       if (selectedAreas.length > 0) params.append('areas', selectedAreas.join(','));
+      if (matterId) params.append('matter_id', matterId);
 
       const res = await fetch(`${API_BASE}/api/research/search?${params}`);
       if (!res.ok) throw new Error('Search failed');

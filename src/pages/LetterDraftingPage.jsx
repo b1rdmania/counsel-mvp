@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -11,7 +11,7 @@ const templateOptions = [
   { id: 'general', label: 'General Correspondence', description: 'Standard legal correspondence' },
 ];
 
-const LetterDraftingPage = () => {
+const LetterDraftingPage = ({ matterId = null }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [recipient, setRecipient] = useState('');
   const [client, setClient] = useState('');
@@ -22,6 +22,21 @@ const LetterDraftingPage = () => {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [hoveredTemplate, setHoveredTemplate] = useState(null);
+
+  // Pre-fill matter reference from matter when scoped to one
+  useEffect(() => {
+    if (!matterId) return;
+    let cancelled = false;
+    fetch(`${API_BASE}/api/advisor/matters/${matterId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (cancelled || !data) return;
+        // Only pre-fill if user hasn't started typing
+        setMatterRef(prev => prev || data.title || matterId);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [matterId]);
 
   const handleGenerate = async () => {
     if (!selectedTemplate) return;
@@ -39,6 +54,7 @@ const LetterDraftingPage = () => {
           matter_reference: matterRef,
           re_line: reLine,
           context,
+          matter_id: matterId || undefined,
         }),
       });
 

@@ -15,7 +15,7 @@ const emptyMatter = {
   gameTheory: null,
 };
 
-const LitigationAdvisorPage = () => {
+const LitigationAdvisorPage = ({ matterId = null }) => {
   const [matters, setMatters] = useState([]);
   const [selectedMatter, setSelectedMatter] = useState(null);
   const [editingMatter, setEditingMatter] = useState(null);
@@ -28,13 +28,44 @@ const LitigationAdvisorPage = () => {
   const [newIssue, setNewIssue] = useState('');
   const chatEndRef = useRef(null);
 
-  // Load matters from API
+  const scopedToMatter = Boolean(matterId);
+
+  // Load matters from API (skip when scoped — we load the single matter below)
   useEffect(() => {
+    if (scopedToMatter) return;
     fetch(`${API_BASE}/api/advisor/matters`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => setMatters(data.matters || []))
       .catch(() => {});
-  }, []);
+  }, [scopedToMatter]);
+
+  // When scoped to a matterId, fetch & auto-select that matter, skipping the list view
+  useEffect(() => {
+    if (!matterId) return;
+    let cancelled = false;
+    fetch(`${API_BASE}/api/advisor/matters/${matterId}`)
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('Not found')))
+      .then(data => {
+        if (cancelled) return;
+        const normalized = {
+          id: data.id,
+          title: data.title || '',
+          summary: data.summary || '',
+          parties: data.parties || [],
+          keyIssues: data.issues || [],
+          strengths: data.strengths || [],
+          weaknesses: data.weaknesses || [],
+          opportunities: data.opportunities || [],
+          gameTheory: (data.analysis && data.analysis.game_theory) || null,
+        };
+        setMatters([data]);
+        setSelectedMatter(normalized);
+        setEditingMatter(normalized);
+        setChatMessages([]);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [matterId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -140,7 +171,8 @@ const LitigationAdvisorPage = () => {
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-      {/* Matter List Sidebar */}
+      {/* Matter List Sidebar (hidden when scoped to a single matter) */}
+      {!scopedToMatter && (
       <div style={{
         width: '260px', minWidth: '260px', backgroundColor: '#262628',
         borderRight: '1px solid #48484A', display: 'flex', flexDirection: 'column', flexShrink: 0,
@@ -194,6 +226,7 @@ const LitigationAdvisorPage = () => {
           ))}
         </div>
       </div>
+      )}
 
       {/* Main Content */}
       {!editingMatter ? (

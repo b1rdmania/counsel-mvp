@@ -82,17 +82,17 @@ const SubNav = () => {
   );
 };
 
-const ContractScannerPage = () => {
+const ContractScannerPage = ({ matterId = null }) => {
   const location = useLocation();
 
   const renderContent = () => {
     const path = location.pathname;
 
-    if (path.startsWith('/scanner/processing/')) return <ProcessingPage />;
-    if (path.startsWith('/scanner/review/')) return <WorkbenchPage />;
-    if (path.startsWith('/scanner/risks/')) return <RiskSummaryPage />;
-    if (path.startsWith('/scanner/audit/')) return <AuditRecordPage />;
-    return <IntakePage />;
+    if (path.startsWith('/scanner/processing/')) return <ProcessingPage matterId={matterId} />;
+    if (path.startsWith('/scanner/review/')) return <WorkbenchPage matterId={matterId} />;
+    if (path.startsWith('/scanner/risks/')) return <RiskSummaryPage matterId={matterId} />;
+    if (path.startsWith('/scanner/audit/')) return <AuditRecordPage matterId={matterId} />;
+    return <IntakePage matterId={matterId} />;
   };
 
   return (

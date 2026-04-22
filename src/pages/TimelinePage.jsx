@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -9,7 +9,7 @@ const significanceColors = {
   low: '#32D74B',
 };
 
-const TimelinePage = () => {
+const TimelinePage = ({ matterId = null }) => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -19,6 +19,21 @@ const TimelinePage = () => {
   const [newEvent, setNewEvent] = useState({ date: '', description: '', source: '', significance: 'medium' });
   const fileInputRef = useRef(null);
   const timelineRef = useRef(null);
+
+  // If a matterId is supplied, load that matter's events on mount
+  useEffect(() => {
+    if (!matterId) return;
+    let cancelled = false;
+    fetch(`${API_BASE}/api/timeline/events?matter_id=${encodeURIComponent(matterId)}`)
+      .then(r => r.ok ? r.json() : { events: [] })
+      .then(data => {
+        if (cancelled) return;
+        const loaded = (data.events || []).map((e, i) => ({ ...e, id: e.id || `evt-${i}-${Date.now()}` }));
+        setEvents(loaded.sort((a, b) => new Date(a.date) - new Date(b.date)));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [matterId]);
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -36,8 +51,12 @@ const TimelinePage = () => {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      if (matterId) formData.append('matter_id', matterId);
 
-      const res = await fetch(`${API_BASE}/api/timeline/extract`, {
+      const url = matterId
+        ? `${API_BASE}/api/timeline/extract?matter_id=${encodeURIComponent(matterId)}`
+        : `${API_BASE}/api/timeline/extract`;
+      const res = await fetch(url, {
         method: 'POST',
         body: formData,
       });
