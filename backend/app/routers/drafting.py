@@ -4,7 +4,7 @@ import json
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ..agents.base import BaseAgent
@@ -63,6 +63,7 @@ class DraftRequest(BaseModel):
     re_line: str = ""
     context: str = ""
     additional_instructions: str = ""
+    matter_id: str | None = None
 
 
 class LetterDraftAgent(BaseAgent):
@@ -153,10 +154,10 @@ async def generate_letter(body: DraftRequest):
     now = datetime.now(timezone.utc).isoformat()
     db = await get_db()
     await db.execute(
-        """INSERT INTO letters (id, template, recipient, client, matter_ref, re_line, context, generated_text, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO letters (id, template, recipient, client, matter_ref, re_line, context, generated_text, matter_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (letter_id, body.template, body.recipient, body.client,
-         body.matter_ref, body.re_line, body.context, letter_text, now),
+         body.matter_ref, body.re_line, body.context, letter_text, body.matter_id, now),
     )
     await db.commit()
     await db.close()
@@ -170,12 +171,20 @@ async def generate_letter(body: DraftRequest):
 
 
 @router.get("/letters")
-async def list_letters():
-    """List previously generated letters."""
+async def list_letters(matter_id: str = Query("", description="Filter by matter ID")):
+    """List previously generated letters, optionally filtered by matter."""
     db = await get_db()
-    rows = await db.execute_fetchall(
-        "SELECT id, template, recipient, client, matter_ref, re_line, created_at FROM letters ORDER BY created_at DESC"
-    )
+    if matter_id:
+        rows = await db.execute_fetchall(
+            "SELECT id, template, recipient, client, matter_ref, re_line, matter_id, created_at "
+            "FROM letters WHERE matter_id = ? ORDER BY created_at DESC",
+            (matter_id,),
+        )
+    else:
+        rows = await db.execute_fetchall(
+            "SELECT id, template, recipient, client, matter_ref, re_line, matter_id, created_at "
+            "FROM letters ORDER BY created_at DESC"
+        )
     await db.close()
     return {"letters": [dict(r) for r in rows]}
 

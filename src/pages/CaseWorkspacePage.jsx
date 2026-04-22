@@ -5,6 +5,7 @@ import LitigationAdvisorPage from './LitigationAdvisorPage.jsx';
 import TimelinePage from './TimelinePage.jsx';
 import LetterDraftingPage from './LetterDraftingPage.jsx';
 import ContractScannerPage from './ContractScannerPage.jsx';
+import MatterAssistant from '../components/MatterAssistant.jsx';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -312,9 +313,15 @@ const CaseWorkspacePage = () => {
         })}
       </div>
 
-      {/* Tab content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {renderTabContent()}
+      {/* Tab content + persistent matter assistant */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {renderTabContent()}
+        </div>
+        <MatterAssistant
+          matterId={matterId}
+          tabContext={TABS.find(t => t.key === activeTab)?.label || ''}
+        />
       </div>
     </div>
   );

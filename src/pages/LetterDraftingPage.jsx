@@ -23,7 +23,8 @@ const LetterDraftingPage = ({ matterId = null }) => {
   const [error, setError] = useState(null);
   const [hoveredTemplate, setHoveredTemplate] = useState(null);
 
-  // Pre-fill matter reference from matter when scoped to one
+  // Pre-fill the letter from the matter when scoped to one. We only fill blank
+  // fields so the lawyer can edit before generating.
   useEffect(() => {
     if (!matterId) return;
     let cancelled = false;
@@ -31,8 +32,36 @@ const LetterDraftingPage = ({ matterId = null }) => {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (cancelled || !data) return;
-        // Only pre-fill if user hasn't started typing
+
         setMatterRef(prev => prev || data.title || matterId);
+
+        const parties = Array.isArray(data.parties) ? data.parties : [];
+        const lowerParties = parties.map(p => String(p).toLowerCase());
+
+        const clientIdx = lowerParties.findIndex(p =>
+          p.includes('client') || p.includes('claimant') || p.includes('applicant')
+        );
+        const opposingIdx = lowerParties.findIndex(p =>
+          p.includes('defendant') || p.includes('respondent') || p.includes('opposing')
+        );
+
+        // Fall back to heuristics: first party as client, second as recipient.
+        const clientGuess = clientIdx >= 0 ? parties[clientIdx] : parties[0];
+        const recipientGuess = opposingIdx >= 0
+          ? parties[opposingIdx]
+          : (clientIdx >= 0 ? parties.find((_, i) => i !== clientIdx) : parties[1]);
+
+        if (clientGuess) setClient(prev => prev || clientGuess);
+        if (recipientGuess) setRecipient(prev => prev || recipientGuess);
+
+        const issues = Array.isArray(data.issues) ? data.issues : [];
+        const ctxParts = [];
+        if (data.summary) ctxParts.push(data.summary);
+        if (issues.length > 0) {
+          ctxParts.push('Key issues:\n' + issues.map(i => `- ${i}`).join('\n'));
+        }
+        const ctxText = ctxParts.join('\n\n');
+        if (ctxText) setContext(prev => prev || ctxText);
       })
       .catch(() => {});
     return () => { cancelled = true; };

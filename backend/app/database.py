@@ -132,9 +132,34 @@ CREATE TABLE IF NOT EXISTS letters (
     re_line TEXT NOT NULL DEFAULT '',
     context TEXT NOT NULL DEFAULT '',
     generated_text TEXT NOT NULL DEFAULT '',
+    matter_id TEXT,
     created_at TEXT NOT NULL
 );
+
+-- Saved cases linked to a matter
+CREATE TABLE IF NOT EXISTS matter_cases (
+    id TEXT PRIMARY KEY,
+    matter_id TEXT NOT NULL,
+    case_id TEXT NOT NULL,
+    case_name TEXT NOT NULL DEFAULT '',
+    citation TEXT NOT NULL DEFAULT '',
+    court TEXT NOT NULL DEFAULT '',
+    date TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    saved_at TEXT NOT NULL,
+    FOREIGN KEY (matter_id) REFERENCES matters(id)
+);
 """
+
+
+async def _ensure_column(db, table: str, column: str, ddl: str) -> None:
+    """Add a column if it does not already exist (SQLite migration helper)."""
+    cursor = await db.execute(f"PRAGMA table_info({table})")
+    rows = await cursor.fetchall()
+    existing = {row[1] for row in rows}
+    if column not in existing:
+        await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
 
 
 async def get_db() -> aiosqlite.Connection:
@@ -149,5 +174,7 @@ async def get_db() -> aiosqlite.Connection:
 async def init_db():
     db = await get_db()
     await db.executescript(SCHEMA)
+    # Backfill columns for older deployments where the table already exists.
+    await _ensure_column(db, "letters", "matter_id", "TEXT")
     await db.commit()
     await db.close()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -14,6 +14,9 @@ const CaseLawPage = ({ matterId = null }) => {
   const [selectedCase, setSelectedCase] = useState(null);
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [savedCaseIds, setSavedCaseIds] = useState(new Set());
+  const [savingCase, setSavingCase] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null);
 
   // Filters
   const [selectedCourts, setSelectedCourts] = useState([]);
@@ -21,6 +24,20 @@ const CaseLawPage = ({ matterId = null }) => {
   const [dateTo, setDateTo] = useState('');
   const [selectedAreas, setSelectedAreas] = useState([]);
   const [showFilters, setShowFilters] = useState(true);
+
+  // Load already-saved cases when scoped to a matter so we can show state.
+  useEffect(() => {
+    if (!matterId) return;
+    let cancelled = false;
+    fetch(`${API_BASE}/api/advisor/matters/${encodeURIComponent(matterId)}/cases`)
+      .then(r => r.ok ? r.json() : { cases: [] })
+      .then(data => {
+        if (cancelled) return;
+        setSavedCaseIds(new Set((data.cases || []).map(c => c.case_id)));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [matterId]);
 
   const toggleCourt = (court) => {
     setSelectedCourts(prev =>
@@ -43,11 +60,17 @@ const CaseLawPage = ({ matterId = null }) => {
 
     try {
       const params = new URLSearchParams({ q: query });
-      if (selectedCourts.length > 0) params.append('courts', selectedCourts.join(','));
-      if (dateFrom) params.append('date_from', dateFrom);
-      if (dateTo) params.append('date_to', dateTo);
-      if (selectedAreas.length > 0) params.append('areas', selectedAreas.join(','));
-      if (matterId) params.append('matter_id', matterId);
+      // Backend takes a single value per filter, so send the first selection.
+      if (selectedCourts.length > 0) params.append('court', selectedCourts[0]);
+      if (dateFrom) {
+        const fromYear = parseInt(String(dateFrom).slice(0, 4), 10);
+        if (!Number.isNaN(fromYear)) params.append('from_year', String(fromYear));
+      }
+      if (dateTo) {
+        const toYear = parseInt(String(dateTo).slice(0, 4), 10);
+        if (!Number.isNaN(toYear)) params.append('to_year', String(toYear));
+      }
+      if (selectedAreas.length > 0) params.append('area', selectedAreas[0]);
 
       const res = await fetch(`${API_BASE}/api/research/search?${params}`);
       if (!res.ok) throw new Error('Search failed');
@@ -65,10 +88,103 @@ const CaseLawPage = ({ matterId = null }) => {
     if (e.key === 'Enter') handleSearch();
   };
 
-  const getRelevanceColor = (score) => {
-    if (score >= 0.8) return '#32D74B';
-    if (score >= 0.5) return '#FF9F0A';
-    return 'rgba(235, 235, 245, 0.6)';
+  const handleCaseClick = async (caseItem) => {
+    setSaveMessage(null);
+    setSelectedCase({ ...caseItem, loading: true });
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/research/case/${encodeURIComponent(caseItem.id)}?q=${encodeURIComponent(query)}`
+      );
+      if (!res.ok) throw new Error(`Failed to load case (${res.status})`);
+      const data = await res.json();
+      setSelectedCase({ ...caseItem, ...data, loading: false });
+    } catch (err) {
+      setSelectedCase({ ...caseItem, loading: false, error: err.message });
+    }
+  };
+
+  const handleSaveToMatter = async () => {
+    if (!matterId || !selectedCase?.id) return;
+    setSavingCase(true);
+    setSaveMessage(null);
+    try {
+      const body = {
+        case_id: selectedCase.id,
+        case_name: selectedCase.case_name || '',
+        citation: selectedCase.citation || '',
+        court: selectedCase.court || '',
+        date: selectedCase.date || '',
+        url: selectedCase.url || '',
+        notes: '',
+      };
+      const res = await fetch(
+        `${API_BASE}/api/advisor/matters/${encodeURIComponent(matterId)}/cases`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }
+      );
+      if (!res.ok) throw new Error('Save failed');
+      const data = await res.json();
+      setSavedCaseIds(prev => new Set(prev).add(selectedCase.id));
+      setSaveMessage(data.status === 'already_saved' ? 'Already saved' : 'Saved to matter');
+    } catch (err) {
+      setSaveMessage(`Error: ${err.message}`);
+    } finally {
+      setSavingCase(false);
+    }
+  };
+
+  const renderAiSummary = (ai) => {
+    if (!ai) {
+      return (
+        <div style={{ fontSize: '12px', color: 'rgba(235,235,245,0.4)', fontStyle: 'italic' }}>
+          AI summary not available for this search.
+        </div>
+      );
+    }
+    if (ai.error) {
+      return (
+        <div style={{ fontSize: '12px', color: '#FF453A' }}>
+          Summary unavailable: {ai.error}
+        </div>
+      );
+    }
+    const fields = [
+      ['Key Principle', ai.key_principle],
+      ['Ratio Decidendi', ai.ratio_decidendi],
+      ['Obiter Dicta', ai.obiter_dicta],
+      ['Relevance to Query', ai.relevance_to_query],
+      ['Practical Impact', ai.practical_impact],
+    ].filter(([, v]) => v && String(v).trim());
+
+    if (fields.length === 0) {
+      return (
+        <div style={{ fontSize: '12px', color: 'rgba(235,235,245,0.4)', fontStyle: 'italic' }}>
+          No summary fields returned.
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {fields.map(([label, value]) => (
+          <div key={label}>
+            <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235,235,245,0.3)', fontWeight: 600, marginBottom: '6px' }}>
+              {label}
+            </div>
+            <div style={{
+              padding: '10px 14px', borderRadius: '6px',
+              backgroundColor: 'rgba(10,132,255,0.05)', borderLeft: '3px solid #0A84FF',
+              fontSize: '13px', color: 'rgba(235,235,245,0.8)', lineHeight: 1.5,
+            }}>
+              {value}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -151,6 +267,11 @@ const CaseLawPage = ({ matterId = null }) => {
                   {court}
                 </label>
               ))}
+              {selectedCourts.length > 1 && (
+                <div style={{ marginTop: '6px', fontSize: '10px', color: 'rgba(235,235,245,0.35)' }}>
+                  Only the first selection is applied.
+                </div>
+              )}
             </div>
 
             {/* Date Range */}
@@ -211,6 +332,11 @@ const CaseLawPage = ({ matterId = null }) => {
                   {area}
                 </label>
               ))}
+              {selectedAreas.length > 1 && (
+                <div style={{ marginTop: '6px', fontSize: '10px', color: 'rgba(235,235,245,0.35)' }}>
+                  Only the first selection is applied.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -257,129 +383,161 @@ const CaseLawPage = ({ matterId = null }) => {
             </div>
           )}
 
-          {results.map((caseItem, index) => (
-            <div
-              key={caseItem.id || index}
-              onClick={() => setSelectedCase(caseItem)}
-              style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
-                cursor: 'pointer',
-                backgroundColor: selectedCase && selectedCase.id === caseItem.id ? 'rgba(10,132,255,0.08)' : 'transparent',
-                transition: 'background-color 0.1s',
-              }}
-              onMouseEnter={(e) => {
-                if (!selectedCase || selectedCase.id !== caseItem.id) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)';
-              }}
-              onMouseLeave={(e) => {
-                if (!selectedCase || selectedCase.id !== caseItem.id) e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                <div style={{ fontWeight: 600, color: '#EBEBF5', fontSize: '13px', flex: 1, marginRight: '12px' }}>
-                  {caseItem.name}
+          {results.map((caseItem, index) => {
+            const displayName = caseItem.case_name || caseItem.name || 'Untitled case';
+            const dateText = caseItem.date || caseItem.year || '';
+            return (
+              <div
+                key={caseItem.id || index}
+                onClick={() => handleCaseClick(caseItem)}
+                style={{
+                  padding: '16px 20px',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: 'pointer',
+                  backgroundColor: selectedCase && selectedCase.id === caseItem.id ? 'rgba(10,132,255,0.08)' : 'transparent',
+                  transition: 'background-color 0.1s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!selectedCase || selectedCase.id !== caseItem.id) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!selectedCase || selectedCase.id !== caseItem.id) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <div style={{ fontWeight: 600, color: '#EBEBF5', fontSize: '13px', marginBottom: '6px' }}>
+                  {displayName}
                 </div>
-                {caseItem.relevance_score !== undefined && (
-                  <div style={{
-                    fontSize: '11px', fontWeight: 600, fontFamily: '"SF Mono", monospace',
-                    color: getRelevanceColor(caseItem.relevance_score),
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {Math.round(caseItem.relevance_score * 100)}%
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '11px', color: 'rgba(235,235,245,0.4)' }}>
+                  {caseItem.citation && <span style={{ fontFamily: '"SF Mono", monospace' }}>{caseItem.citation}</span>}
+                  {caseItem.court && <span>{caseItem.court}</span>}
+                  {dateText && <span>{dateText}</span>}
+                  {matterId && savedCaseIds.has(caseItem.id) && (
+                    <span style={{ color: '#32D74B' }}>Saved</span>
+                  )}
+                </div>
+                {caseItem.snippet && (
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'rgba(235,235,245,0.5)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {caseItem.snippet}
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', color: 'rgba(235,235,245,0.4)' }}>
-                {caseItem.citation && <span style={{ fontFamily: '"SF Mono", monospace' }}>{caseItem.citation}</span>}
-                {caseItem.court && <span>{caseItem.court}</span>}
-                {caseItem.year && <span>{caseItem.year}</span>}
-              </div>
-              {caseItem.snippet && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: 'rgba(235,235,245,0.5)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {caseItem.snippet}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Case Detail Panel */}
         {selectedCase && (
           <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#1E1E20', padding: '32px' }}>
-            <div style={{ maxWidth: '640px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-                <div>
+            <div style={{ maxWidth: '720px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', gap: '16px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#EBEBF5', marginBottom: '8px' }}>
-                    {selectedCase.name}
+                    {selectedCase.case_name || selectedCase.name || 'Untitled case'}
                   </h2>
-                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'rgba(235,235,245,0.5)' }}>
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '12px', color: 'rgba(235,235,245,0.5)' }}>
                     {selectedCase.citation && <span style={{ fontFamily: '"SF Mono", monospace' }}>{selectedCase.citation}</span>}
                     {selectedCase.court && <span>{selectedCase.court}</span>}
-                    {selectedCase.year && <span>{selectedCase.year}</span>}
+                    {selectedCase.date && <span>{selectedCase.date}</span>}
+                    {selectedCase.url && (
+                      <a
+                        href={selectedCase.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: '#0A84FF', textDecoration: 'none' }}
+                      >
+                        View on Case Law archive →
+                      </a>
+                    )}
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedCase(null)}
-                  style={{ background: 'none', border: 'none', color: 'rgba(235,235,245,0.4)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
-                >
-                  x
-                </button>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {matterId && (
+                    <button
+                      onClick={handleSaveToMatter}
+                      disabled={savingCase || savedCaseIds.has(selectedCase.id)}
+                      style={{
+                        backgroundColor: savedCaseIds.has(selectedCase.id) ? 'rgba(50,215,75,0.15)' : '#0A84FF',
+                        color: savedCaseIds.has(selectedCase.id) ? '#32D74B' : 'white',
+                        border: savedCaseIds.has(selectedCase.id) ? '1px solid rgba(50,215,75,0.4)' : 'none',
+                        padding: '6px 14px', borderRadius: '6px',
+                        fontSize: '12px', fontWeight: 600, fontFamily,
+                        cursor: savingCase || savedCaseIds.has(selectedCase.id) ? 'default' : 'pointer',
+                        opacity: savingCase ? 0.6 : 1,
+                      }}
+                    >
+                      {savedCaseIds.has(selectedCase.id)
+                        ? 'Saved to matter'
+                        : (savingCase ? 'Saving...' : '+ Save to matter')}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setSelectedCase(null); setSaveMessage(null); }}
+                    style={{ background: 'none', border: 'none', color: 'rgba(235,235,245,0.4)', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
 
-              {selectedCase.relevance_score !== undefined && (
+              {saveMessage && (
                 <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '6px 12px', borderRadius: '6px', marginBottom: '24px',
-                  backgroundColor: 'rgba(10,132,255,0.08)', border: '1px solid rgba(10,132,255,0.2)',
+                  marginBottom: '16px', padding: '8px 12px', borderRadius: '6px',
+                  backgroundColor: saveMessage.startsWith('Error') ? 'rgba(255,69,58,0.1)' : 'rgba(50,215,75,0.1)',
+                  color: saveMessage.startsWith('Error') ? '#FF453A' : '#32D74B',
+                  fontSize: '12px',
                 }}>
-                  <span style={{ fontSize: '11px', color: 'rgba(235,235,245,0.6)' }}>Relevance</span>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: getRelevanceColor(selectedCase.relevance_score) }}>
-                    {Math.round(selectedCase.relevance_score * 100)}%
-                  </span>
+                  {saveMessage}
                 </div>
               )}
 
-              {selectedCase.summary && (
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235,235,245,0.3)', fontWeight: 600, marginBottom: '10px' }}>
-                    Summary
-                  </div>
-                  <div style={{ fontSize: '14px', lineHeight: 1.7, color: 'rgba(235,235,245,0.8)', whiteSpace: 'pre-wrap' }}>
-                    {selectedCase.summary}
-                  </div>
+              {selectedCase.loading && (
+                <div style={{ color: 'rgba(235,235,245,0.5)', fontSize: '13px', padding: '20px 0' }}>
+                  Loading judgment and AI summary...
                 </div>
               )}
 
-              {selectedCase.key_principles && selectedCase.key_principles.length > 0 && (
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235,235,245,0.3)', fontWeight: 600, marginBottom: '10px' }}>
-                    Key Principles
-                  </div>
-                  {selectedCase.key_principles.map((principle, i) => (
-                    <div key={i} style={{
-                      padding: '10px 14px', marginBottom: '8px', borderRadius: '6px',
-                      backgroundColor: 'rgba(10,132,255,0.05)', borderLeft: '3px solid #0A84FF',
-                      fontSize: '13px', color: 'rgba(235,235,245,0.7)', lineHeight: 1.5,
-                    }}>
-                      {principle}
+              {selectedCase.error && (
+                <div style={{ color: '#FF453A', fontSize: '13px', padding: '20px 0' }}>
+                  {selectedCase.error}
+                </div>
+              )}
+
+              {!selectedCase.loading && !selectedCase.error && (
+                <>
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235,235,245,0.3)', fontWeight: 600, marginBottom: '10px' }}>
+                      AI Summary
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {selectedCase.area_of_law && (
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235,235,245,0.3)', fontWeight: 600, marginBottom: '10px' }}>
-                    Area of Law
+                    {renderAiSummary(selectedCase.ai_summary)}
                   </div>
-                  <span style={{
-                    display: 'inline-block', padding: '4px 10px', borderRadius: '12px',
-                    fontSize: '11px', fontWeight: 500,
-                    backgroundColor: 'rgba(50,215,75,0.1)', color: '#32D74B',
-                  }}>
-                    {selectedCase.area_of_law}
-                  </span>
-                </div>
+
+                  {selectedCase.body_excerpt && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235,235,245,0.3)', fontWeight: 600, marginBottom: '10px' }}>
+                        Judgment Excerpt
+                      </div>
+                      <div style={{
+                        fontSize: '13px', lineHeight: 1.7, color: 'rgba(235,235,245,0.75)',
+                        whiteSpace: 'pre-wrap', padding: '16px', borderRadius: '6px',
+                        backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid #38383A',
+                        maxHeight: '420px', overflowY: 'auto',
+                      }}>
+                        {selectedCase.body_excerpt}
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedCase.body_excerpt && selectedCase.snippet && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(235,235,245,0.3)', fontWeight: 600, marginBottom: '10px' }}>
+                        Snippet
+                      </div>
+                      <div style={{ fontSize: '13px', lineHeight: 1.7, color: 'rgba(235,235,245,0.75)' }}>
+                        {selectedCase.snippet}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
