@@ -11,6 +11,7 @@ import LitigationAdvisorPage from './pages/LitigationAdvisorPage.jsx';
 import ContractScannerPage from './pages/ContractScannerPage.jsx';
 import TimelinePage from './pages/TimelinePage.jsx';
 import LetterDraftingPage from './pages/LetterDraftingPage.jsx';
+import HomePage from './pages/HomePage.jsx';
 
 const bodyStyle = {
   backgroundColor: '#1C1C1E',
@@ -161,7 +162,7 @@ const Sidebar = () => {
       <div style={brandingStyle}>
         <div
           style={{ fontWeight: 700, letterSpacing: '-0.5px', color: '#EBEBF5', fontSize: '15px', cursor: 'pointer' }}
-          onClick={() => navigate('/scanner')}
+          onClick={() => navigate('/')}
         >
           BIRD <span style={{ color: 'rgba(235, 235, 245, 0.6)', fontWeight: 500 }}>LEGAL</span>
         </div>
@@ -221,8 +222,8 @@ const App = () => {
       <Sidebar />
       <div style={mainContentStyle}>
         <Routes>
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/scanner" replace />} />
+          {/* Home dashboard */}
+          <Route path="/" element={<HomePage />} />
 
           {/* Case Law Research */}
           <Route path="/research" element={<CaseLawPage />} />
