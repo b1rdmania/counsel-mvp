@@ -173,9 +173,11 @@ counsel-mvp/
 
 ---
 
-## Related repo
+## Related repos
 
 **[counsel-demo](https://github.com/b1rdmania/counsel-demo)** — pure clickthrough UI prototype with no backend. Hardcoded mock data. Useful if you want to walk through the UX without spinning up the LLM dependency. The functional version you probably want is *this* repo.
+
+**[courtless](https://github.com/b1rdmania/courtless)** — sister product **Courtless** (live at [courtless.xyz](https://courtless.xyz)). A consumer-facing AI dispute audit for SMEs and individuals — the pre-legal Judge Judy layer, below the price point where a law firm makes sense. Bird Legal is for the firms; Courtless is for everyone else. Shares the `BaseAgent` wrapper and design language.
 
 ---
 
