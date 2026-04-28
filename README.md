@@ -11,7 +11,7 @@ Bird Legal is a private-cloud legal AI platform built for boutique and mid-size 
 Two things happened in early 2026 that reframed legal AI:
 
 1. **Heppner v. US (SDNY, February 2026)** confirmed that using consumer AI tools (ChatGPT, consumer Claude) with client documents waives attorney-client privilege. Every firm that's been quietly using ChatGPT now has a problem.
-2. **Anthropic launched a legal plugin for Claude** (April 2026) bringing enterprise AI directly into the hands of lawyers — but requiring each firm to configure MCPs, write skills, and stitch workflows themselves.
+2. **Anthropic launched Claude for Legal** (January 2026) bringing enterprise AI directly into the hands of lawyers — but it still requires each firm to configure MCPs, write skills, and stitch workflows themselves.
 
 Neither path works for a 15-lawyer commercial firm: consumer AI destroys privilege, enterprise AI either costs £200K+/year (Harvey, Legora, Eudia) or requires a technical lift most firms don't have. Bird Legal is the third option — a packaged, matter-first product that can be configured for a firm in a week and run entirely on their own infrastructure.
 
@@ -19,7 +19,7 @@ Neither path works for a 15-lawyer commercial firm: consumer AI destroys privile
 
 ## Positioning
 
-- **Privilege-preserving by design.** Architecture supports self-hosted open-source models (Gemma 3, Llama 3, Mistral, Hermes) so client documents never touch a third-party cloud. Every agent call is audit-logged with input/output hashes. Also supports Claude API with Zero Data Retention for firms that prefer a managed model.
+- **Privilege-preserving by design.** The `BaseAgent` wrapper is model-agnostic, so the same pipeline can target Claude API today and a self-hosted open-source model (Gemma 3, Llama 3, Mistral, Hermes) tomorrow — keeping client documents off third-party clouds for firms that need it. Every agent call is audit-logged with input/output hashes. Claude API runs under Zero Data Retention for firms that prefer a managed model.
 - **Matter-first, not prompt-first.** Every module works inside a matter and sees what every other module knows. Add a party once, it flows into the Letter Before Action. Save a case, strategy analysis cites it. A persistent AI assistant lives inside each matter with full context.
 - **UK law as default.** Live integration with The National Archives' Find Case Law API. CPR-aware letter templates. Part 36 compliance built in. DD Month YYYY dates. UK English throughout. Jurisdiction packs architected but not yet built for Scotland, NI, Ireland, Singapore, HK, EU.
 
