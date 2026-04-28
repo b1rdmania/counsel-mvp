@@ -1,6 +1,9 @@
 """SQLite database setup and helpers."""
 
+from contextlib import asynccontextmanager
+
 import aiosqlite
+
 from .config import DB_PATH
 
 SCHEMA = """
@@ -26,6 +29,7 @@ CREATE TABLE IF NOT EXISTS clauses (
     metadata_json TEXT DEFAULT '{}',
     FOREIGN KEY (document_id) REFERENCES documents(id)
 );
+CREATE INDEX IF NOT EXISTS idx_clauses_document_id ON clauses(document_id);
 
 CREATE TABLE IF NOT EXISTS analyses (
     id TEXT PRIMARY KEY,
@@ -38,6 +42,7 @@ CREATE TABLE IF NOT EXISTS analyses (
     flags_json TEXT DEFAULT '[]',
     FOREIGN KEY (clause_id) REFERENCES clauses(id)
 );
+CREATE INDEX IF NOT EXISTS idx_analyses_clause_id ON analyses(clause_id);
 
 CREATE TABLE IF NOT EXISTS redlines (
     id TEXT PRIMARY KEY,
@@ -49,6 +54,7 @@ CREATE TABLE IF NOT EXISTS redlines (
     risk_score INTEGER NOT NULL DEFAULT 3,
     FOREIGN KEY (clause_id) REFERENCES clauses(id)
 );
+CREATE INDEX IF NOT EXISTS idx_redlines_clause_id ON redlines(clause_id);
 
 CREATE TABLE IF NOT EXISTS summaries (
     id TEXT PRIMARY KEY,
@@ -68,6 +74,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     timestamp TEXT NOT NULL,
     FOREIGN KEY (redline_id) REFERENCES redlines(id)
 );
+CREATE INDEX IF NOT EXISTS idx_reviews_redline_id ON reviews(redline_id);
 
 CREATE TABLE IF NOT EXISTS audit_log (
     id TEXT PRIMARY KEY,
@@ -84,6 +91,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
     error_msg TEXT,
     timestamp TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_audit_log_document_id ON audit_log(document_id);
 
 -- Litigation Advisor: Matters
 CREATE TABLE IF NOT EXISTS matters (
@@ -109,6 +117,7 @@ CREATE TABLE IF NOT EXISTS matter_messages (
     timestamp TEXT NOT NULL,
     FOREIGN KEY (matter_id) REFERENCES matters(id)
 );
+CREATE INDEX IF NOT EXISTS idx_matter_messages_matter_id ON matter_messages(matter_id);
 
 -- Timeline Builder: Events
 CREATE TABLE IF NOT EXISTS timeline_events (
@@ -121,6 +130,7 @@ CREATE TABLE IF NOT EXISTS timeline_events (
     created_at TEXT NOT NULL,
     FOREIGN KEY (matter_id) REFERENCES matters(id)
 );
+CREATE INDEX IF NOT EXISTS idx_timeline_events_matter_id ON timeline_events(matter_id);
 
 -- Letter Drafting: Generated letters
 CREATE TABLE IF NOT EXISTS letters (
@@ -135,6 +145,7 @@ CREATE TABLE IF NOT EXISTS letters (
     matter_id TEXT,
     created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_letters_matter_id ON letters(matter_id);
 
 -- Saved cases linked to a matter
 CREATE TABLE IF NOT EXISTS matter_cases (
@@ -150,6 +161,7 @@ CREATE TABLE IF NOT EXISTS matter_cases (
     saved_at TEXT NOT NULL,
     FOREIGN KEY (matter_id) REFERENCES matters(id)
 );
+CREATE INDEX IF NOT EXISTS idx_matter_cases_matter_id ON matter_cases(matter_id);
 """
 
 
@@ -162,19 +174,24 @@ async def _ensure_column(db, table: str, column: str, ddl: str) -> None:
         await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
 
 
-async def get_db() -> aiosqlite.Connection:
+@asynccontextmanager
+async def db_connection():
+    """Async context manager that always closes the connection, even on error."""
     db = await aiosqlite.connect(str(DB_PATH), timeout=30)
     db.row_factory = aiosqlite.Row
     await db.execute("PRAGMA journal_mode=WAL")
     await db.execute("PRAGMA foreign_keys=ON")
     await db.execute("PRAGMA busy_timeout=10000")
-    return db
+    try:
+        yield db
+    finally:
+        await db.close()
+
 
 
 async def init_db():
-    db = await get_db()
-    await db.executescript(SCHEMA)
-    # Backfill columns for older deployments where the table already exists.
-    await _ensure_column(db, "letters", "matter_id", "TEXT")
-    await db.commit()
-    await db.close()
+    async with db_connection() as db:
+        await db.executescript(SCHEMA)
+        # Backfill columns for older deployments where the table already exists.
+        await _ensure_column(db, "letters", "matter_id", "TEXT")
+        await db.commit()

@@ -58,11 +58,6 @@ class ReviewDecision(str, Enum):
 
 # --- Request schemas ---
 
-class DocumentUpload(BaseModel):
-    analysis_type: AnalysisType = AnalysisType.general
-    posture: ReviewPosture = ReviewPosture.balanced
-
-
 class ReviewRequest(BaseModel):
     decision: ReviewDecision
     modified_text: Optional[str] = None
