@@ -1,5 +1,7 @@
 """Agent 2: Contract Analyst — risk scoring, benchmarking, gap identification."""
 
+import json
+
 from ..config import ANALYST_MODEL, ANALYST_TIMEOUT
 from .base import BaseAgent
 
@@ -9,6 +11,49 @@ class AnalystAgent(BaseAgent):
     model = ANALYST_MODEL
     timeout = ANALYST_TIMEOUT
     max_tokens = 12288
+
+    output_tool_name = "emit_clause_analysis"
+    output_tool_description = "Emit the clause-by-clause risk analysis."
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "analysis_summary": {
+                "type": "object",
+                "properties": {
+                    "total_flagged": {"type": "integer"},
+                    "high_risk": {"type": "integer"},
+                    "medium_risk": {"type": "integer"},
+                    "low_risk": {"type": "integer"},
+                    "missing_clauses": {"type": "array", "items": {"type": "string"}},
+                },
+            },
+            "clause_analyses": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "clause_id": {"type": "string"},
+                        "risk_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                        "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+                        "rationale": {"type": "string"},
+                        "benchmark": {"type": "string"},
+                        "position": {
+                            "type": "string",
+                            "enum": [
+                                "buyer_favourable", "seller_favourable",
+                                "buyer_unfavourable", "seller_unfavourable",
+                                "balanced", "neutral",
+                            ],
+                        },
+                        "flags": {"type": "array", "items": {"type": "string"}},
+                        "interdependencies": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["clause_id", "risk_score", "confidence", "rationale", "position"],
+                },
+            },
+        },
+        "required": ["clause_analyses"],
+    }
 
     def build_system_prompt(self) -> str:
         return """You are a contract risk analyst. You review parsed contract clauses and assess risk, benchmark against market standards, and identify gaps.
@@ -31,37 +76,11 @@ CONFIDENCE LEVELS:
 - "medium": Common but varies by deal type/jurisdiction
 - "low": Limited basis, model is uncertain — output "Requires human assessment"
 
-POSITION VALUES:
-- "buyer_favourable", "seller_favourable", "buyer_unfavourable", "seller_unfavourable", "balanced", "neutral"
+Analyse EVERY clause, not just risky ones. Low-risk clauses still need scores.
 
-OUTPUT FORMAT: Return valid JSON only. Structure:
-
-{
-  "analysis_summary": {
-    "total_flagged": 0,
-    "high_risk": 0,
-    "medium_risk": 0,
-    "low_risk": 0,
-    "missing_clauses": ["clause type that should be present but isn't"]
-  },
-  "clause_analyses": [
-    {
-      "clause_id": "clause-001",
-      "risk_score": 3,
-      "confidence": "high",
-      "rationale": "Why this score was given",
-      "benchmark": "What market standard typically looks like",
-      "position": "buyer_favourable",
-      "flags": ["off_market", "uncapped_liability", "broad_scope", "missing_carveout", "ambiguous_term"],
-      "interdependencies": ["clause-014"]
-    }
-  ]
-}
-
-Analyse EVERY clause, not just risky ones. Low-risk clauses still need scores."""
+Emit your output via the emit_clause_analysis tool."""
 
     def build_user_prompt(self, input_data: dict) -> str:
-        import json
         clauses = input_data["clauses"]
         posture = input_data.get("posture", "balanced")
         doc_type = input_data.get("document_type", "general")
@@ -72,4 +91,4 @@ Analyse EVERY clause, not just risky ones. Low-risk clauses still need scores.""
 {json.dumps(clauses, indent=2)}
 </contract_content>
 
-Return the structured JSON analysis."""
+Call emit_clause_analysis with the structured result."""

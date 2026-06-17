@@ -1,19 +1,28 @@
 """Counsel MVP — FastAPI backend."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import FRONTEND_URL
+from .config import ALLOWED_ORIGINS
 from .database import init_db
 from .routers import documents, research, advisor, timeline, drafting
+from .services.pipeline import sweep_stuck_documents
 from .services.seed import seed_demo_data
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await sweep_stuck_documents()
     await seed_demo_data()
     yield
 
@@ -26,9 +35,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

@@ -5,10 +5,14 @@ matters first and skips if found.
 """
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone, timedelta
 
-from ..database import get_db
+from ..database import db_connection
+
+
+logger = logging.getLogger(__name__)
 
 
 DEMO_MATTERS = [
@@ -263,120 +267,110 @@ async def seed_demo_data():
     Safe to run on every startup; won't duplicate existing seeded matters
     or wipe user-created ones.
     """
-    db = await get_db()
+    async with db_connection() as db:
+        existing_rows = await db.execute_fetchall("SELECT title FROM matters")
+        existing_titles = {dict(r)["title"] for r in existing_rows}
 
-    # Get existing matter titles so we can skip duplicates
-    existing_rows = await db.execute_fetchall("SELECT title FROM matters")
-    existing_titles = {dict(r)["title"] for r in existing_rows}
+        to_seed = [m for m in DEMO_MATTERS if m["title"] not in existing_titles]
+        if not to_seed:
+            logger.info("All %d demo matters already present, skipping seed", len(DEMO_MATTERS))
+            return
 
-    to_seed = [m for m in DEMO_MATTERS if m["title"] not in existing_titles]
-    if not to_seed:
-        print(f"[SEED] All {len(DEMO_MATTERS)} demo matters already present, skipping")
-        await db.close()
-        return
+        logger.info("Seeding %d missing demo matters (of %d total)", len(to_seed), len(DEMO_MATTERS))
 
-    print(f"[SEED] Seeding {len(to_seed)} missing demo matters (of {len(DEMO_MATTERS)} total)...")
+        now = datetime.now(timezone.utc)
 
-    now = datetime.now(timezone.utc)
+        for i, matter_data in enumerate(to_seed):
+            matter_id = str(uuid.uuid4())
+            # Stagger created dates so "last activity" varies
+            created = (now - timedelta(days=30 - i * 6)).isoformat()
 
-    for i, matter_data in enumerate(to_seed):
-        matter_id = str(uuid.uuid4())
-        # Stagger created dates so "last activity" varies
-        created = (now - timedelta(days=30 - i * 6)).isoformat()
+            # Build a cached analysis structure so the "Analyse Strategy" button
+            # returns instantly via the fast-path (rather than running Claude fresh).
+            analysis = {}
+            gt = matter_data.get("game_theory")
+            if gt:
+                # Store under both keys so both legacy and current frontend code find it
+                analysis["nash_equilibrium"] = gt
+                analysis["game_theory"] = gt
+            if matter_data.get("risk_assessment"):
+                analysis["risk_assessment"] = matter_data["risk_assessment"]
+            if matter_data.get("strengths"):
+                analysis["strengths"] = matter_data["strengths"]
+            if matter_data.get("weaknesses"):
+                analysis["weaknesses"] = matter_data["weaknesses"]
+            if matter_data.get("opportunities"):
+                analysis["opportunities"] = matter_data["opportunities"]
+            if gt:
+                analysis["recommended_strategy"] = (
+                    "Apply coordinated pressure across injunctive relief, cost escalation, "
+                    "and reputational exposure. Force the counterparty into the Nash "
+                    "equilibrium band by demonstrating credible commitment to trial while "
+                    "leaving a commercially acceptable settlement path open. Timing is "
+                    "decisive — act before the cost curve steepens and before any pleadings "
+                    "crystallise adverse positions."
+                )
+                analysis["key_cases_to_research"] = [
+                    "Yam Seng Pte Ltd v International Trade Corporation Ltd [2013] EWHC 111 (QB) — implied duty of good faith",
+                    "Al Nehayan v Kent [2018] EWHC 333 (Comm) — relational contracts and good faith",
+                    "Tele2 International Card Company SA v Post Office Ltd [2009] EWCA Civ 9 — election and waiver of contractual rights",
+                ]
 
-        # Build a cached analysis structure so the "Analyse Strategy" button
-        # returns instantly via the fast-path (rather than running Claude fresh).
-        analysis = {}
-        gt = matter_data.get("game_theory")
-        if gt:
-            # Store under both keys so both legacy and current frontend code find it
-            analysis["nash_equilibrium"] = gt
-            analysis["game_theory"] = gt
-        if matter_data.get("risk_assessment"):
-            analysis["risk_assessment"] = matter_data["risk_assessment"]
-        # Also embed the SWO arrays inside the analysis so the fast-path payload
-        # is complete on its own.
-        if matter_data.get("strengths"):
-            analysis["strengths"] = matter_data["strengths"]
-        if matter_data.get("weaknesses"):
-            analysis["weaknesses"] = matter_data["weaknesses"]
-        if matter_data.get("opportunities"):
-            analysis["opportunities"] = matter_data["opportunities"]
-        # Add a realistic recommended strategy and case list so the full response
-        # shape matches what Claude would return.
-        if gt:
-            analysis["recommended_strategy"] = (
-                "Apply coordinated pressure across injunctive relief, cost escalation, "
-                "and reputational exposure. Force the counterparty into the Nash "
-                "equilibrium band by demonstrating credible commitment to trial while "
-                "leaving a commercially acceptable settlement path open. Timing is "
-                "decisive — act before the cost curve steepens and before any pleadings "
-                "crystallise adverse positions."
-            )
-            analysis["key_cases_to_research"] = [
-                "Yam Seng Pte Ltd v International Trade Corporation Ltd [2013] EWHC 111 (QB) — implied duty of good faith",
-                "Al Nehayan v Kent [2018] EWHC 333 (Comm) — relational contracts and good faith",
-                "BNP Paribas SA v Trattamento Rifiuti Metropolitani SpA [2019] EWCA Civ 768 — waiver",
-            ]
-
-        await db.execute(
-            """INSERT INTO matters (id, title, summary, parties_json, issues_json,
-               strengths_json, weaknesses_json, opportunities_json, analysis_json,
-               created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                matter_id,
-                matter_data["title"],
-                matter_data["summary"],
-                json.dumps(matter_data["parties"]),
-                json.dumps(matter_data["issues"]),
-                json.dumps(matter_data.get("strengths", [])),
-                json.dumps(matter_data.get("weaknesses", [])),
-                json.dumps(matter_data.get("opportunities", [])),
-                json.dumps(analysis),
-                created,
-                created,
-            ),
-        )
-
-        # Seed timeline events for this matter
-        for event in matter_data.get("timeline_events", []):
-            event_id = str(uuid.uuid4())
             await db.execute(
-                """INSERT INTO timeline_events (id, matter_id, date, description,
-                   source_document, significance, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                """INSERT INTO matters (id, title, summary, parties_json, issues_json,
+                   strengths_json, weaknesses_json, opportunities_json, analysis_json,
+                   created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    event_id,
                     matter_id,
-                    event["date"],
-                    event["description"],
-                    "Seeded data",
-                    event["significance"],
+                    matter_data["title"],
+                    matter_data["summary"],
+                    json.dumps(matter_data["parties"]),
+                    json.dumps(matter_data["issues"]),
+                    json.dumps(matter_data.get("strengths", [])),
+                    json.dumps(matter_data.get("weaknesses", [])),
+                    json.dumps(matter_data.get("opportunities", [])),
+                    json.dumps(analysis),
+                    created,
                     created,
                 ),
             )
 
-    # Seed a couple of demo letters
-    for letter_data in DEMO_LETTERS:
-        letter_id = str(uuid.uuid4())
-        await db.execute(
-            """INSERT INTO letters (id, template, recipient, client, matter_ref,
-               re_line, context, generated_text, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                letter_id,
-                letter_data["template"],
-                letter_data["recipient"],
-                letter_data["client"],
-                letter_data["matter_ref"],
-                letter_data["re_line"],
-                letter_data["context"],
-                "[Draft pending — click to generate]",
-                now.isoformat(),
-            ),
-        )
+            for event in matter_data.get("timeline_events", []):
+                event_id = str(uuid.uuid4())
+                await db.execute(
+                    """INSERT INTO timeline_events (id, matter_id, date, description,
+                       source_document, significance, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        event_id,
+                        matter_id,
+                        event["date"],
+                        event["description"],
+                        "Seeded data",
+                        event["significance"],
+                        created,
+                    ),
+                )
 
-    await db.commit()
-    await db.close()
-    print(f"[SEED] Seeded {len(DEMO_MATTERS)} matters with timelines and {len(DEMO_LETTERS)} letter drafts")
+        for letter_data in DEMO_LETTERS:
+            letter_id = str(uuid.uuid4())
+            await db.execute(
+                """INSERT INTO letters (id, template, recipient, client, matter_ref,
+                   re_line, context, generated_text, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    letter_id,
+                    letter_data["template"],
+                    letter_data["recipient"],
+                    letter_data["client"],
+                    letter_data["matter_ref"],
+                    letter_data["re_line"],
+                    letter_data["context"],
+                    "[Draft pending — click to generate]",
+                    now.isoformat(),
+                ),
+            )
+
+        await db.commit()
+    logger.info("Seeded %d matters with timelines and %d letter drafts", len(to_seed), len(DEMO_LETTERS))

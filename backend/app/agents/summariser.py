@@ -1,5 +1,7 @@
 """Agent 4: Summary Writer — executive summary, key terms, risk overview."""
 
+import json
+
 from ..config import SUMMARISER_MODEL, SUMMARISER_TIMEOUT
 from .base import BaseAgent
 
@@ -10,6 +12,51 @@ class SummariserAgent(BaseAgent):
     timeout = SUMMARISER_TIMEOUT
     max_tokens = 6144
 
+    output_tool_name = "emit_summary"
+    output_tool_description = "Emit the executive summary, key terms, and risk overview."
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "executive_summary": {"type": "string"},
+            "key_terms": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "term": {"type": "string"},
+                        "value": {"type": "string"},
+                        "notes": {"type": "string"},
+                    },
+                    "required": ["term", "value"],
+                },
+            },
+            "risk_overview": {
+                "type": "object",
+                "properties": {
+                    "overall_risk": {
+                        "type": "string",
+                        "enum": ["low", "moderate", "moderate-high", "high"],
+                    },
+                    "distribution": {
+                        "type": "object",
+                        "properties": {
+                            "high": {"type": "integer"},
+                            "medium": {"type": "integer"},
+                            "low": {"type": "integer"},
+                        },
+                    },
+                    "balance": {
+                        "type": "string",
+                        "enum": ["buyer_favourable", "seller_favourable", "balanced", "unclear"],
+                    },
+                    "top_concerns": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["overall_risk", "top_concerns"],
+            },
+        },
+        "required": ["executive_summary", "key_terms", "risk_overview"],
+    }
+
     def build_system_prompt(self) -> str:
         return """You are a legal summary writer. You produce executive summaries and key-terms extractions from contract analysis results.
 
@@ -19,27 +66,9 @@ CRITICAL RULES:
 3. Do NOT fabricate facts or statistics not present in the analysis.
 4. The executive summary should be 3-5 paragraphs.
 
-OUTPUT FORMAT: Return valid JSON only. Structure:
-
-{
-  "executive_summary": "3-5 paragraph summary of the agreement, risks, and recommendations",
-  "key_terms": [
-    {
-      "term": "Purchase Price",
-      "value": "$15,000,000",
-      "notes": "Subject to working capital adjustment"
-    }
-  ],
-  "risk_overview": {
-    "overall_risk": "low|moderate|moderate-high|high",
-    "distribution": {"high": 0, "medium": 0, "low": 0},
-    "balance": "buyer_favourable|seller_favourable|balanced|unclear",
-    "top_concerns": ["Concern 1", "Concern 2", "Concern 3"]
-  }
-}"""
+Emit your output via the emit_summary tool."""
 
     def build_user_prompt(self, input_data: dict) -> str:
-        import json
         return f"""Produce an executive summary, key terms extraction, and risk overview from the following contract analysis.
 
 <contract_content>
@@ -54,4 +83,4 @@ Redline suggestions:
 {json.dumps(input_data.get('redlines', []), indent=2)}
 </contract_content>
 
-Return the structured JSON summary."""
+Call emit_summary with the structured result."""

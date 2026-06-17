@@ -1,5 +1,7 @@
 """Agent 3: Redline Generator — produces amendment suggestions for flagged clauses."""
 
+import json
+
 from ..config import REDLINER_MODEL, REDLINER_TIMEOUT
 from .base import BaseAgent
 
@@ -9,6 +11,36 @@ class RedlinerAgent(BaseAgent):
     model = REDLINER_MODEL
     timeout = REDLINER_TIMEOUT
     max_tokens = 8192
+
+    output_tool_name = "emit_redlines"
+    output_tool_description = "Emit redline suggestions for flagged clauses."
+    output_schema = {
+        "type": "object",
+        "properties": {
+            "redlines": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "clause_id": {"type": "string"},
+                        "original_text": {"type": "string"},
+                        "suggested_text": {"type": "string"},
+                        "explanation": {"type": "string"},
+                        "priority": {
+                            "type": "string",
+                            "enum": ["critical", "important", "suggested"],
+                        },
+                        "risk_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                    },
+                    "required": [
+                        "clause_id", "original_text", "suggested_text",
+                        "explanation", "priority", "risk_score",
+                    ],
+                },
+            },
+        },
+        "required": ["redlines"],
+    }
 
     def build_system_prompt(self) -> str:
         return """You are a legal redline generator. You produce specific, professional amendment suggestions for flagged contract clauses.
@@ -25,25 +57,11 @@ PRIORITY LEVELS:
 - "important": Should be negotiated
 - "suggested": Nice to have, low leverage
 
-OUTPUT FORMAT: Return valid JSON only. Structure:
+Only generate redlines for clauses with risk_score >= 3. Do not redline standard/acceptable clauses.
 
-{
-  "redlines": [
-    {
-      "clause_id": "clause-001",
-      "original_text": "The exact original clause text",
-      "suggested_text": "The amended clause text with changes",
-      "explanation": "Plain-English explanation of what changed and why",
-      "priority": "critical",
-      "risk_score": 5
-    }
-  ]
-}
-
-Only generate redlines for clauses with risk_score >= 3. Do not redline standard/acceptable clauses."""
+Emit your output via the emit_redlines tool."""
 
     def build_user_prompt(self, input_data: dict) -> str:
-        import json
         flagged = input_data["flagged_clauses"]
         posture = input_data.get("posture", "balanced")
 
@@ -53,4 +71,4 @@ Only generate redlines for clauses with risk_score >= 3. Do not redline standard
 {json.dumps(flagged, indent=2)}
 </contract_content>
 
-Return the structured JSON with amendment suggestions."""
+Call emit_redlines with the structured result."""
